@@ -19,7 +19,7 @@ const monorepoPlugin = {
   },
 };
 
-const services = ['whatsapp-bot', 'trip-planner', 'integrations'];
+const services = ['whatsapp-bot', 'trip-planner', 'integrations', 'auth', 'authorizer'];
 
 async function buildAll() {
   for (const service of services) {

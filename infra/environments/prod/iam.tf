@@ -188,6 +188,102 @@ resource "aws_iam_role_policy" "integrations" {
 # Data source for AWS account ID
 data "aws_caller_identity" "current" {}
 
+# IAM Role for Lambda - Auth
+resource "aws_iam_role" "auth" {
+  name = "${var.project_name}-auth-${var.environment}"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "lambda.amazonaws.com"
+        }
+      }
+    ]
+  })
+
+  tags = {
+    Name = "auth-role"
+  }
+}
+
+resource "aws_iam_role_policy" "auth" {
+  name = "${var.project_name}-auth-policy-${var.environment}"
+  role = aws_iam_role.auth.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "cognito-idp:SignUp",
+          "cognito-idp:InitiateAuth",
+          "cognito-idp:ConfirmSignUp",
+          "cognito-idp:ForgotPassword",
+          "cognito-idp:ConfirmForgotPassword",
+          "cognito-idp:ResendConfirmationCode"
+        ]
+        Resource = aws_cognito_user_pool.main.arn
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ]
+        Resource = "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:*"
+      }
+    ]
+  })
+}
+
+# IAM Role for Lambda - Authorizer
+resource "aws_iam_role" "authorizer" {
+  name = "${var.project_name}-authorizer-${var.environment}"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Effect = "Allow"
+        Principal = {
+          Service = "lambda.amazonaws.com"
+        }
+      }
+    ]
+  })
+
+  tags = {
+    Name = "authorizer-role"
+  }
+}
+
+resource "aws_iam_role_policy" "authorizer" {
+  name = "${var.project_name}-authorizer-policy-${var.environment}"
+  role = aws_iam_role.authorizer.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "logs:CreateLogGroup",
+          "logs:CreateLogStream",
+          "logs:PutLogEvents"
+        ]
+        Resource = "arn:aws:logs:${var.aws_region}:${data.aws_caller_identity.current.account_id}:*"
+      }
+    ]
+  })
+}
+
 # Outputs
 output "whatsapp_bot_role_arn" {
   value = aws_iam_role.whatsapp_bot.arn

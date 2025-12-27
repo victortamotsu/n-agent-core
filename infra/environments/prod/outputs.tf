@@ -44,3 +44,15 @@ output "api_gateway" {
     }
   }
 }
+
+output "cognito" {
+  description = "Cognito User Pool details"
+  value = {
+    user_pool_id        = aws_cognito_user_pool.main.id
+    user_pool_arn       = aws_cognito_user_pool.main.arn
+    user_pool_endpoint  = aws_cognito_user_pool.main.endpoint
+    client_id           = aws_cognito_user_pool_client.web_client.id
+    domain              = aws_cognito_user_pool.main.domain
+  }
+  sensitive = true
+}

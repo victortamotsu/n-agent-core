@@ -21,8 +21,11 @@ Teremos um site web público para:
 3. painel de controle do usuário e visualização de documentos de resposta de conteúdo rico da IA (veja mais detalhes abaixo) 
 4. painel de controle de parceiros/fornecedores
 5. painel de controle de administradores
+6. Central de Ajuda e FAQ Dinâmico: Uma área onde dúvidas comuns sobre o uso da IA são respondidas automaticamente.
 
 Os usuários poderão receber respostas da IA no formato de relatórios com conteúdo ricos, como imagens de mapas, links, tabelas, informações de preços, etc. Vamos usar a estrutura do site para exibir este conteúdo para o usuário.
+
+[Dúvida] Deveríamos ter um app para capturar a localização, dando mais informações sobre a viagem para o agente? Assim, conseguimos mais contexto. [Todo] Se seguirmos por este caminho, como trabalhar a privacidade dos dados?
 
 ### Interação padrão do usuário
 
@@ -33,21 +36,28 @@ Os inputs do usuário dará exclusivamente via chat com a IA "n-agent". O chat s
 - audio
 - localização
 - documentos
+- Encaminhamento de mensagens: Permitir que o usuário encaminhe e-mails (ex: confirmações de reserva) ou mensagens de outros contatos diretamente para o bot.
 
 Os outputs podersão ser:
 
 - texto (com suporte a emoticons, links e formatação)
 - localização (um link para abertura do aplicativo de localização padrão do celular, como o Google Maps ou Apple Map)
 - Link para um documento rico, gerado e exibido em uma interface web com a resposta a solicitação do usuário.
+- Botões de Ação Rápida (Quick Replies): No WhatsApp e Web, oferecer botões como "Confirmar", "Ver Mais Detalhes", "Alterar Roteiro" para agilizar a interação e evitar digitação.
 
 ## Integrações e capacidades do agente
 
 Vamos dividir este projeto em fases, sendo a fase atual o MVP do produto. Nesta primeira fase o agente deve ter as seguintes capacidades:
 
 1. Fase de conhecimento do cliente e da viagem: é a fase onde montamos um dossiê de informações sobre a viagem, acompanhantes, objetivos (pessoais e do grupo de viagem), destinos, itinerário desejado, budget e datas. Estas informações devem ser persistidas e devem permear todas as fases posteriores.
+    - [Requisito Adicional] Perfilamento de Risco e Acessibilidade: Identificar restrições alimentares, alergias, dificuldades de locomoção (acessibilidade) ou medos (ex: medo de avião) dos integrantes.
 2. Fase de planejamento da viagem: usando as informações do passo anterior, devemos estudar os requisitos para atingir os objetivos da viagem. Devemos apresentar um resumo e um detalhamento dos custos e esforços de atingir os objetivo, com timelines e riscos, para auxiliar na tomada de decisão dos roteiros. Esta é a fase mais complicada porque a viagem ainda pode estar em momento de definição da quantidade de destinos, quantidade de pessoas, etc. Devemos usar todas as ferramentas possíveis para diminuir custos e oferecer experiências para os usuários.
+    - [Requisito Adicional] Versionamento de Roteiros: O sistema deve permitir salvar "Versão A (Econômica)" e "Versão B (Conforto)" para comparação lado a lado.
 3. Fase de contratação de serviços e gestão da viagem: é a fase onde vamos começar a concretizar a viagem, organizando os momentos certos de contratar serviços e organizar as informações da viagem, sempre com o cuidado de revisar cada aspecto da viagem para antecipar problemas para evitar transtornos para os usuários. Vamos guardar cada aspecto da viagem: agenda, locais, ingressos, custos, documentos, informações sobre os locais de visita, serviços contratados, etc.
+    - [Sugestão] Gestão de Vouchers Offline: Garantir que todos os PDFs e QRCodes essenciais sejam enviados para o WhatsApp, Google Drive ou e-mail para acesso mesmo sem internet.
 4. Fase de execução da viagem (concierge): nesta fase já temos todos os serviços definidos e viagem começou! Vamos desde o início auxiliar a visita com resumos do roterio, mensagens com lembretes e informações, chat para tirar dúvidas ou auxiliar em casos de incidentes. A IA entraria em contato um pouco antes de cada evento para dar insights e informações para auxiliar em momentos chave, como o link para um ingresso um pouco antes do momento de entrar na atração ou informações sobre o portão de embarque e como fazer para chegar até o local. 
+    - [Requisito Crítico] Modo Offline/Baixa Conexão: A IA deve saber quando o usuário pode estar sem internet e enviar pacotes de informação (resumo do dia seguinte) com antecedência via WhatsApp.
+    - [Requisito Adicional] Fuso Horário Inteligente: O agente deve considerar proativamente o jet lag e ajustar sugestões de atividades no primeiro dia, além de saber o horário local exato para envio de alertas.
 6. Fase de organização de memórias: aqui a plataforma vai trabalhar com a montagem de informações sobre a viagem, organizando albúns, locais no mapa, informações da viagem para preseravar a memória do usuário e de seu grupo.
 
 Para realizar estas capacidades, temos que entregar as seguintes ferramentas para a plataforma:
@@ -67,6 +77,9 @@ Para realizar estas capacidades, temos que entregar as seguintes ferramentas par
     - Integração com Google Calendar ou Outlook para gestão da agenda da visita,
     - Integração com aplicativos de notas e tarefas, como o Google Keep, Microsoft Todo e Evernote para criação de listas com tarefas para os integrantes do grupo de viagem.
     - Integrações com serviço de clima e canais do Youtube com informações para viajantes da época visitada
+    - [Nova Integração] Câmbio e Conversão: API para cotação de moedas em tempo real (ex: Open Exchange Rates) para ajudar na decisão de compras.
+    - [Nova Integração] Serviços de Tradução: Integração com DeepL ou Google Translate API para tradução automática de cardápios via foto ou negociações locais.
+    - [Nova Integração] Clima e Alertas: APIs meteorológicas (ex: OpenWeather) para avisar sobre chuva e sugerir roteiros alternativos indoor automaticamente.
 
 # Requisitos técnicos
 
@@ -75,16 +88,19 @@ Para realizar estas capacidades, temos que entregar as seguintes ferramentas par
 - Toda a plataforma deve ser definida com IaC e infraestrutura 100% AWS, com a maior quantidade de serviços serverless
 - Vamos usar uma estrutura de microserviços Lambda + Bedrock Agents para tornar o ambiente pay as you Go, com foco em otimização de custos vs vantagens das soluções implementadas
 - Banco de dados DynamoDB, com modelagem a seu critério
+- [Sugestão] Cache Strategy (ElastiCache/Redis): Para evitar custos excessivos de LLM e APIs de terceiros em perguntas repetidas (ex: "Qual meu voo?").
 - Backend em node, com frontend em React
 - Interface visual respeitando o Material Design M3 Expressive
 - BFF para controle e orquestração das informações
 - endpoint específico para integrações com aplicações terceiras
 - Solução agnóstica ao modelo de IA para processamento do fluxo, usando uma mescla de AWS Nova, Gemini e Claude para as tarefas
+- [Requisito de Segurança] Privacidade e LGPD/GDPR: Como a plataforma lida com dados sensíveis (Passaportes, cartões, dados de menores), é crucial implementar criptografia em repouso e políticas claras de retenção e exclusão de dados.
 
 ## Website
 
 - Ter domínio público para promoção da plataforma e captação de clientes, com integração com solução de pagamentos seguros do serviço
 - Painel de controle para clientes, com um menu de gestão da conta, meios de pagamento, criação de acessos para participantes do grupo de viagem
+    - [Funcionalidade] Gestão de Permissões do Grupo: Definir quem pode alterar o roteiro (ex: Pai/Mãe) e quem pode apenas visualizar (ex: Filhos/Amigos), para evitar que alguém cancele um hotel sem querer.
 - Painel de controle para gestão do ambiente, usados pelos administradores
 - Painel de controle para terceiros, como fornecedores e parceiros
 - Para o painel de clientes, ter um sistema de documentos com formatação rica, como o Evernote, onde o conteúdo é apresentado em um sistemas de fichário, onde os documentos podem ser compartilhados ou acessíveis via link gerado pela IA
@@ -111,6 +127,7 @@ Para realizar estas capacidades, temos que entregar as seguintes ferramentas par
     - Informei então que eu estava preocupado com informações sobre documentação necessária para a viagem já que um dos sobrinhos é menor de idade e eu quero dirigir um carro alugado. A IA então respondeu com as informações que ela achou: todos temos que ter passaportes com data de vencimento menor do que 6 meses da data da viagem, uma forma de comprovar que temos ao menos 30 euros por dia por pessoa, taxas para autorização de viagem na Europa, PID para direção internacional e que eu posso levar meu sobrinho se ele tiver a observação em seu passaporte que ele pode viajar desacompanhado. Gerou um relatório no painel onde eu cliquei e revi os detalhes do resumo que ele passou. Por exemplo, como eu deveria revisar os dados do passaporte, a opção de enviar as fotos dos passaportes para a IA revisar e registrar na pasta de documentos.
     - Definimos um budget com teto de gastos e informações sobre documentação que já temos (2 pessoas do nosso grupo ainda não tem passaprote brasileiro)
     - Parei de interagir com a IA neste dia, deixando tarefas pendentes.
+    - [Sugestão de Melhoria]: Na etapa de documentos, a IA deve validar automaticamente a validade do passaporte lendo a data da foto enviada (OCR) e alertar se expira antes ou durante a viagem, não apenas confiar no texto do usuário.
 
 3. Fase de planejamento
 
@@ -119,7 +136,8 @@ Para realizar estas capacidades, temos que entregar as seguintes ferramentas par
     - Revisamos ponto a ponto cada sugestão, começando pelas passagens e revisão dos hotéis, optando por hospedagens com ao menos 2 banheiros e que estivessem fácil acesso a atrações. Pedi um estudo de quanto vale a pena ficar longe da cidade e economizar na estadia, mas gastar mais tempo e dinheiro no deslocamento, o que foi prontamente feito, alterando as sugestões de hospedagem. 
     - Deposi revisamos a alimentação, transporte, atrações. Adequamos as sugestões de atrações com público de maioria jovem, com algumas lojas de grife, visitas a bibliotecas, museus e até um show. Mudamos algumas sugestões de datas para conseguirmos visitar locais icônicos, como a Disneyland Paris e o palácio de Versalhes.
     - Por último, o agente me ajudou a entender como devemos nos preparar com checklists de documentos, serviços (seguro viagem, seguro de carro, aluguel de carro), dicas para economia sugerindo e revisando o tipo do meu cartão de crédito para usar serviços no exterior, comparando ofertas de serviços de roaming internacional para internet no local de visita, sugerindo locais de alimentação para datas especiais, etc.
-    - Os documentos desta fase foram organizados com resumos, links, condições e pré-requisitos, uma timeline para acompanhamento das datas limites (por exemplo, o ticket do coliseu deve ser comprado com 30 dias de antecedência, nem antes nem depois, mas a maioria precisa ser comprada com antedência). 
+    - Os documentos desta fase foram organizados com resumos, links, condições e pré-requisitos, uma timeline para acompanhamento das datas limites (por exemplo, o ticket do coliseu deve ser comprado com 30 dias de antecedência, nem antes nem depois, mas a maioria precisa ser comprada com antedência).
+    - [Funcionalidade]: "Edição Manual do Usuário". Se a IA sugerir algo que o usuário odeia, ele deve ter uma forma fácil no painel web de clicar e substituir ou excluir o item, e a IA deve recalcular o resto (replanejamento dinâmico). 
 
 4. Contratação de serviços
 
@@ -127,6 +145,8 @@ Para realizar estas capacidades, temos que entregar as seguintes ferramentas par
     - Para cada serviço contratado, anexei os comprovantes e tickets para a IA revisar os dados (como datas, condições de pagamento, horários de check-in, regras restritivas). As informações validadas são adicionadas no meu roteiro, com links para os documentos originais na plataforma. 
     - A IA registrou todos os pagamentos e criou dashboards com os valores e datas de pagamentos das parcelas. Também me ajudou a criar cofres no Picpay para juntar o dinheiro para alimentação e transporte, afim de provisionar os fundos da viagem e das compras pretendidas pelo grupo, com uma lista de desejos de produtos por pessoa pelo Google Keep.
     - Recebi alertas para lembrar com alguns dias de antecedência a contratação e pagamentos de serviços. A IA também me ajudou na tradução de contratos em inglês de guias turísticos e na avaliação de contratos de seguro saúde. 
+    - [Sugestão]: Controle Financeiro Multi-moeda. O painel deve mostrar o gasto estimado em Reais (convertido) e na moeda original (Euro/Libra), permitindo input manual de câmbio pago para controle real do cartão de crédito.
+    - [Dúvidas]: Exportação das informações para outros sistemas de controle?.
 
 5. Concierge
 
@@ -139,13 +159,16 @@ Para realizar estas capacidades, temos que entregar as seguintes ferramentas par
     - Em uma das atrações, um dos meus filhos apresentou dor de estômago severa. Perguntei instruções para a IA e de pronto fui informado do telefone de atendimento do seguro viagem em portguês e um template de como eu deveria pedir auxílio. Fui orientado pela atendente a ir a uma clínica conveniada onde fomos atendidos sem custo direto para mim. A IA ajudou no entendimento das regras do seguro sem eu precisar revisar documentos ou pesquisar os contatos.
     - Perdemos a hora de uma atração, o Coliseu. Com isso, não conseguimos mais entrar. A IA informou que não haviam mais ingressos disponíveis e deu duas alternativas: enfrentar a fila da bilheteria, com horas de espera e possibilidade de esgotamento de ingressos, ou comprar bilhete por um tour guiado que a IA encontrou em um site de viagens. A IA conversou com o contato com o tour guiado via Whatsapp e negociou valor e disponibilidade para o meu grupo, eliminando este gasto de tempo. Também sugeriu adiantar outras atrações, alterando a agenda de atrações do dia em nosso roteiro para ocupar o tempo que seria gasto no coliseu.
     - Na última cidade do roteiro, a hospedagem de um apartamento em Florença via Booking tinha um detalhe diferente do esperado, um único banheiro. A IA revisou o artigo da hospedagem e confirmou a informação que haviam dois banheiros e sugeriu contato com o ponto de contato via telefone ou mensagem na plataforma do Booking, sugerindo um template de manesagem em Italiano questionando a falta do banheiro. Não tivemos êxito no contato, com a IA sugerindo contato com o suporte da plataforma do Booking e apresentou 3 possíveis caminhos: aceitar a situação e depois pedir reembolso de valores referentes a falta do recurso contratado, receber uma opção de troca do ponto de contato ou do time de suporte do Booking ou reservar um outra estadia, apresentando opções próximas com valores mais altos da diária, mas condições similares. Usamos a terceira opção e a IA recalculou o controle de gastos para adicionar uma tarifa de ônibus diferente, o valor da diária e ajustou o roteiro com rotas. 
+    - [Cenário de Crise]: Adicionar fluxo para "Perda de Documentos" (onde ir, consulado mais próximo, o que levar) e "Greves de Transporte" (muito comum na Europa/França). A IA deve monitorar notícias locais para antecipar greves de trem.
 
 6. Memórias
 
     - A IA entregou um resumo do roteiro percorrido, um calendário com fotos do local e descrições das mudanças ocorridas durante a viagem.
     - Com uma integração com o Google Fotos, criou um álbum compartilhado com todos os participantes, criando separações por local no álbum para organização. 
     - Ofertou um serviço de impressão do álbum por um valor adicional. 
+    - [Sugestão]: Mapa de Calor (Heatmap) dos locais visitados baseado no histórico de localização (se o usuário permitir), criando uma visualização bonita do trajeto real vs. planejado.
 
 ## Informações sobre o MVP
 
 - Não faremos a contratação de serviços automática, usando o agente, apenas vamos avaliar e indicar as melhores ofertas/serviços encontradas nas integrações para atender o roteiro e oferecer o link para a contratação. Mas no futuro queremos integrar as informações.
+- [Estratégia]: Deixar claro nos Termos de Uso que a responsabilidade final da reserva (datas e nomes corretos) é do usuário, já que a IA apenas sugere o link, para evitar processos caso o usuário compre algo errado.

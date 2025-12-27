@@ -124,26 +124,79 @@ Marketing (Ofertas): Mais caro.
 Bônus: As primeiras 1.000 conversas de serviço por mês são grátis.
 
 Tempo de Integração: Médio (1 semana). A validação da conta Business no Facebook pode ser burocrática.
-## C. Gemini com Google Search (Grounding)
+## C. Gemini 2.0 Flash com Google Search (Grounding)
 
-⚠️ **Atenção**: Como sua infra é AWS, o Gemini não é "nativo" (o nativo é o Amazon Titan/Nova ou Anthropic Claude). Para usar o Gemini com Search, você tem duas opções:
+⚠️ **Decisão de Arquitetura**: Vamos usar o Gemini 2.0 Flash com **Grounding with Google Search** como IA principal para recomendações e pesquisas.
 
-### Opção 1: Híbrida (Recomendada para MVP)
+### Por que Gemini + Search?
 
-Sua Lambda na AWS chama a API da **Vertex AI** (Google Cloud).
+1. **Dados Atualizados**: Busca informações em tempo real (preços, eventos, reviews)
+2. **Citações**: Retorna links das fontes para credibilidade
+3. **Custo-Benefício**: Gemini 2.0 Flash é mais barato que Claude para tarefas de busca
+4. **Latência**: ~2-3s vs 5-7s de Claude + Serper
 
-**Feature**: "Grounding with Google Search". Você envia o prompt para o Gemini Pro e ativa a flag de Search. A resposta já vem com os dados atualizados da web e links (citações).
+### Arquitetura Híbrida (Escolhida)
 
-**Custo:**
-- **Gemini 1.5 Flash**: Muito barato
-- **Grounding**: ~$35 USD por 1.000 queries de Search (preço estimado, varia por volume)
+```
+┌─────────────┐     ┌──────────────────┐     ┌──────────────────┐
+│ AWS Lambda  │────▶│  Vertex AI API   │────▶│  Gemini 2.0      │
+│ (Orquestrador)    │  (Google Cloud)  │     │  + Search        │
+└─────────────┘     └──────────────────┘     └──────────────────┘
+```
 
-### Opção 2: 100% AWS (Alternativa)
+### Quando usar Gemini vs Bedrock?
 
-Usar o modelo **Claude 3.5 Sonnet** no Bedrock + Ferramenta de Busca.
+| Tarefa | IA Utilizada | Motivo |
+|--------|--------------|--------|
+| Buscar hotéis na moda | Gemini + Search | Precisa de dados web recentes |
+| Recomendar restaurantes | Gemini + Search | Reviews e rankings atualizados |
+| Extrair dados de passaporte (OCR) | Bedrock (Claude 3.5 Sonnet) | Melhor para visão computacional |
+| Gerar documento de roteiro | Bedrock (Claude 3.5 Sonnet) | Melhor para textos longos estruturados |
+| Conversa casual | Bedrock (AWS Nova Lite) | Mais barato, latência baixa |
 
-- Você usaria uma API de busca como **Serper.dev** ou **Tavily** (feitas para IA).
-- O Claude decide "preciso buscar no Google", chama a ferramenta Serper, recebe o JSON com resultados e formula a resposta.
+### Integração
+
+```typescript
+import { VertexAI } from '@google-cloud/vertexai';
+
+const vertexAI = new VertexAI({
+  project: 'n-agent-project',
+  location: 'us-central1'
+});
+
+const model = vertexAI.preview.getGenerativeModel({
+  model: 'gemini-2.0-flash-exp',
+  generationConfig: {
+    temperature: 0.7,
+    maxOutputTokens: 2048,
+  },
+  tools: [{ googleSearchRetrieval: {} }]  // ✨ Ativa o Search!
+});
+
+const result = await model.generateContent({
+  contents: [{
+    role: 'user',
+    parts: [{ text: 'Quais são os melhores restaurantes em Roma próximos ao Coliseu em 2027?' }]
+  }]
+});
+
+// Resposta inclui: texto + groundingMetadata com links
+```
+
+### Custo
+
+- **Gemini 2.0 Flash**: ~$0.10 por 1M tokens (input) + ~$0.30 por 1M tokens (output)
+- **Grounding**: ~$35 USD por 1.000 queries de Search
+- **Estimativa MVP**: ~$50-80/mês para 1.000 usuários
+
+### Alternativa 100% AWS (Não Escolhida)
+
+Poderíamos usar Claude 3.5 Sonnet no Bedrock + **Serper.dev** ou **Tavily**, mas:
+- ❌ Custo maior (~2x)
+- ❌ Latência maior (2 chamadas de API)
+- ✅ Porém, mantém tudo na fatura AWS
+
+**Decisão**: Usar Gemini para MVP e reavaliar na Fase 2.
 
 ## D. Booking.com / Skyscanner (Agregadores de Viagem)
 
@@ -164,15 +217,140 @@ Grandes players não dão API aberta de transação (reserva) para startups logo
 ### Custo
 
 **Zero** (você ganha comissão).
+
+### 💡 Dica
+
+Considere usar a API do **Amadeus for Developers** para voos e hotéis no início. É muito amigável para desenvolvedores e tem sandbox gratuita.
+
+## E. Airbnb (Hospedagem Alternativa)
+
+### Como funciona
+
+O Airbnb não possui API pública oficial para parceiros. Duas abordagens:
+
+### Opção 1: Web Scraping Ético (MVP)
+
+- Usar serviços como **Bright Data** ou **ScraperAPI** que respeitam robots.txt
+- Extrair apenas dados públicos: preços, disponibilidade, fotos, avaliações
+- **Custo**: ~$50-100/mês para 10K requests
+- **Limitação**: Não permite reserva direta, apenas deep link para o site
+
+### Opção 2: Parceria Oficial (Pós-MVP)
+
+- Aplicar ao **Airbnb Affiliate Program** (comissão de ~3%)
+- Acesso limitado a dados via **Affiliate API**
+- Processo de aprovação: 2-4 semanas
+
+### Integração no MVP
+
+```typescript
+interface AirbnbListing {
+  id: string;
+  title: string;
+  location: { lat: number; lng: number; city: string };
+  pricePerNight: number;
+  currency: string;
+  rating: number;
+  reviewsCount: number;
+  maxGuests: number;
+  bedrooms: number;
+  bathrooms: number;
+  amenities: string[];  // ['WiFi', 'Kitchen', 'Parking']
+  photos: string[];     // URLs das fotos
+  deepLink: string;     // Link para reserva no site
+}
+```
+
+### Tempo de Integração
+
+Médio (1-2 semanas para setup e testes)
+
+## F. AviationStack (Dados de Aeroportos e Voos)
+
+### Por que é essencial?
+
+Para a fase de **Concierge**, precisamos:
+- Status de voos em tempo real (atrasos, cancelamentos)
+- Mudanças de portão de embarque
+- Informações de aeroportos (terminais, lounges, serviços)
+
+### API Utilizada
+
+**AviationStack** - Alternativa ao FlightAware, mais acessível
+
+### Features Necessárias
+
+```typescript
+interface FlightStatus {
+  flightNumber: string;        // "BA247"
+  airline: string;             // "British Airways"
+  departure: {
+    airport: string;           // "GRU"
+    terminal: string;          // "3"
+    gate: string;              // "12"
+    scheduledTime: string;
+    actualTime: string;        // Pode diferir se atrasado
+    delay: number;             // minutos
+  };
+  arrival: {
+    airport: string;           // "LHR"
+    terminal: string;
+    gate: string;              // Atualizado em tempo real!
+    scheduledTime: string;
+    estimatedTime: string;
+  };
+  status: 'scheduled' | 'active' | 'landed' | 'cancelled' | 'diverted';
+}
+```
+
+### Integração
+
+REST API simples com polling a cada 30 minutos para voos nas próximas 24h.
+
+### Custo
+
+- **Plano Starter**: $49/mês para 10K requests
+- ~500 requests/dia no MVP (suporta 100 viagens simultâneas)
+
+### Tempo de Integração
+
+Rápido (2-3 dias)
+
+---
+
 # 4. Roadmap Técnico Sugerido
 
-1. **Setup do Monorepo e CI/CD**: Garantir que o "Hello World" da Lambda chegue na AWS.
-2. **Módulo WhatsApp**: Fazer o bot responder "Oi" via Webhook.
-3. **Cérebro (Bedrock)**: Configurar o Agente e criar a primeira "Tool" simples (ex: consultar clima).
-4. **BFF e Painel Web**: Criar o login e a visualização básica do chat.
-5. **Integração de Mapas**: Permitir que o bot gere um link de mapa.
-6. **Integração de Voos/Hotéis**
-4. Roadmap Técnico Sugerido
+## Fase 1: Fundação (Semanas 1-4)
+
+| Semana | Entrega | Critério de Sucesso |
+|--------|---------|---------------------|
+| 1 | Setup Monorepo + CI/CD | Deploy automático de Lambda "Hello World" |
+| 2 | Infraestrutura base (Terraform/CDK) | DynamoDB + S3 + API Gateway funcionando |
+| 3 | Auth (Cognito) + BFF básico | Login funcional no frontend |
+| 4 | Módulo WhatsApp | Bot responde "Oi" via Webhook |
+
+## Fase 2: Core AI (Semanas 5-8)
+
+| Semana | Entrega | Critério de Sucesso |
+|--------|---------|---------------------|
+| 5 | Bedrock Agent configurado | Agente responde perguntas simples |
+| 6 | Tool: Consulta clima | IA retorna previsão do tempo |
+| 7 | Tool: Google Maps Places | IA busca e retorna locais |
+| 8 | Persistência de contexto | IA lembra dados da viagem |
+
+## Fase 3: Produto (Semanas 9-12)
+
+| Semana | Entrega | Critério de Sucesso |
+|--------|---------|---------------------|
+| 9 | Painel Web (Dashboard) | Visualização da viagem |
+| 10 | Geração de documentos | PDF de roteiro gerado |
+| 11 | Integração Booking | Busca de hotéis funcionando |
+| 12 | Notificações + Alertas | Lembretes via WhatsApp |
+
+## Marco: MVP Pronto para Beta Testers (Semana 12)
+
+---
+
 ## Parte 1: Modelagem do DynamoDB (NoSQL)
 
 Para a AWS e arquitetura Serverless, a melhor prática é usar o **Single Table Design** (ou uma variação híbrida) para a tabela principal de dados, otimizando a leitura rápida do painel, e uma tabela separada para o Histórico de Chat (devido ao alto volume de escrita).
@@ -409,5 +587,493 @@ Formato padrão enviado pelo Meta para o backend. O serviço de ingestion deve n
   ]
 }
 ```
+
+---
+
+# 5. Sistema de Documentos Ricos
+
+## Visão Geral
+
+O sistema de documentos é um diferencial do produto. Não vamos criar um "Google Drive interno", mas sim um **sistema de documentos gerados sob demanda** com visualização rica.
+
+## Arquitetura de Documentos
+
+```
+┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
+│  Bedrock Agent  │────▶│  Doc Generator   │────▶│    S3 Bucket    │
+│  (decide gerar) │     │  (Lambda + React │     │  (HTML estático │
+└─────────────────┘     │   SSR ou PDF)    │     │   ou JSON+meta) │
+                        └──────────────────┘     └─────────────────┘
+                                                          │
+                                                          ▼
+                                                 ┌─────────────────┐
+                                                 │   CloudFront    │
+                                                 │  (URL assinada) │
+                                                 └─────────────────┘
+```
+
+## Tipos de Documentos
+
+| Tipo | Formato | Uso |
+|------|---------|-----|
+| **Roteiro Resumido** | HTML interativo | Compartilhar via link |
+| **Roteiro Completo** | PDF | Download/impressão |
+| **Checklist** | JSON + React | Painel interativo |
+| **Voucher/Ingresso** | PDF com QRCode | Envio via WhatsApp |
+| **Relatório Financeiro** | HTML + gráficos | Dashboard de gastos |
+| **Mapa de Viagem** | HTML + Google Maps embed | Visualização geográfica |
+
+## Estrutura de Storage (S3)
+
+```
+s3://n-agent-documents/
+├── users/
+│   └── {userId}/
+│       └── avatar.jpg
+├── trips/
+│   └── {tripId}/
+│       ├── docs/
+│       │   ├── roteiro-v1.html
+│       │   ├── roteiro-v1.pdf
+│       │   ├── roteiro-v2.html      # Versionamento!
+│       │   └── checklist.json
+│       ├── vouchers/
+│       │   ├── flight-evt001.pdf
+│       │   └── hotel-evt002.pdf
+│       └── attachments/
+│           ├── passaporte-joao.jpg   # Criptografado!
+│           └── seguro-viagem.pdf
+└── templates/
+    ├── roteiro-template.html
+    └── voucher-template.html
+```
+
+## Geração de Documentos (Lambda Doc Generator)
+
+### Fluxo de Geração
+
+1. **Trigger**: Bedrock Agent decide que precisa gerar documento
+2. **Coleta**: Lambda busca dados da viagem no DynamoDB
+3. **Renderização**: 
+   - HTML: React Server-Side Rendering (Next.js API Route ou @react-pdf/renderer)
+   - PDF: Puppeteer headless ou `@react-pdf/renderer`
+4. **Upload**: Documento salvo no S3 com metadados
+5. **URL**: Gera URL assinada (expira em 7 dias) ou URL pública para docs não-sensíveis
+6. **Notificação**: Envia link para usuário via WhatsApp/WebSocket
+
+### Exemplo de Metadados (DynamoDB)
+
+```json
+{
+  "PK": "TRIP#123",
+  "SK": "DOC#roteiro-v2",
+  "type": "ITINERARY",
+  "version": 2,
+  "format": "html",
+  "s3Key": "trips/123/docs/roteiro-v2.html",
+  "createdAt": "2025-01-15T10:00:00Z",
+  "expiresAt": "2025-02-15T10:00:00Z",
+  "isPublic": false,
+  "sharedWith": ["member@email.com"]
+}
+```
+
+## Versionamento de Roteiros
+
+Cada alteração significativa no roteiro gera uma nova versão:
+
+```typescript
+interface TripVersion {
+  tripId: string;
+  version: number;
+  label: string;           // "Versão Econômica", "Versão Conforto"
+  snapshot: TripSnapshot;  // Estado completo do roteiro
+  createdAt: string;
+  createdBy: string;       // userId que fez a alteração
+  diff?: TripDiff;         // O que mudou da versão anterior
+}
+```
+
+### Comparação Lado a Lado (Fase 2)
+
+O frontend terá um componente de "diff visual" para comparar versões:
+- Preço total: R$ 12.000 → R$ 15.000 (+25%)
+- Hospedagem: Airbnb Centro → Hotel 4 estrelas
+- Dias em Paris: 4 → 5
+
+---
+
+# 6. Autenticação e Autorização
+
+## Fluxo de Autenticação
+
+### Usuários com Conta (Owner/Admin)
+
+```
+┌─────────┐    ┌─────────────┐    ┌──────────────┐
+│  Login  │───▶│   Cognito   │───▶│  JWT Token   │
+│  (Web)  │    │  User Pool  │    │  (1h expiry) │
+└─────────┘    └─────────────┘    └──────────────┘
+                     │
+         ┌───────────┴───────────┐
+         ▼                       ▼
+   Email + Senha           OAuth (Google/Microsoft)
+```
+
+### Membros Convidados (Viewer/Editor)
+
+Para membros que não querem criar conta completa:
+
+```
+┌────────────┐    ┌─────────────┐    ┌──────────────┐
+│  Link com  │───▶│  Lambda     │───▶│  Session     │
+│  Token     │    │  Validator  │    │  Temporária  │
+└────────────┘    └─────────────┘    └──────────────┘
+```
+
+- Token único gerado pelo Owner ao convidar
+- Válido por 7 dias ou até aceite
+- Acesso limitado apenas à viagem específica
+- Pode fazer upgrade para conta completa a qualquer momento
+
+## Políticas de Autorização (IAM-like)
+
+```typescript
+const permissions = {
+  'OWNER': ['trip:*', 'member:*', 'billing:*', 'doc:*'],
+  'ADMIN': ['trip:read', 'trip:write', 'member:invite', 'doc:*'],
+  'EDITOR': ['trip:read', 'trip:suggest', 'doc:read'],
+  'VIEWER': ['trip:read', 'doc:read']
+};
+```
+
+---
+
+# 7. Sistema de Notificações
+
+## Canais de Notificação
+
+| Canal | Uso | Serviço AWS |
+|-------|-----|-------------|
+| **WhatsApp** | Alertas críticos, lembretes | Meta Cloud API |
+| **Email** | Confirmações, relatórios | Amazon SES |
+| **Web Push** | Alertas em tempo real no painel | Lambda + WebSocket |
+| **In-App** | Badge de notificações | DynamoDB + polling |
+
+## Tipos de Notificações
+
+```typescript
+enum NotificationType {
+  // Urgentes (WhatsApp + Push)
+  FLIGHT_GATE_CHANGE = 'flight_gate_change',
+  BOOKING_CANCELLED = 'booking_cancelled',
+  MEMBER_EMERGENCY = 'member_emergency',
+  
+  // Importantes (WhatsApp)
+  CHECKIN_REMINDER = 'checkin_reminder',      // 24h antes
+  DOCUMENT_EXPIRING = 'document_expiring',    // 30 dias antes
+  PAYMENT_DUE = 'payment_due',
+  
+  // Informativas (Email + In-App)
+  ITINERARY_UPDATED = 'itinerary_updated',
+  NEW_RECOMMENDATION = 'new_recommendation',
+  TRIP_SUMMARY = 'trip_summary'               // Semanal
+}
+```
+
+## Agendamento (EventBridge Scheduler)
+
+```json
+{
+  "Name": "checkin-reminder-EVT002",
+  "ScheduleExpression": "at(2027-08-01T14:00:00)",
+  "Target": {
+    "Arn": "arn:aws:lambda:us-east-1:123:function:send-notification",
+    "Input": {
+      "type": "CHECKIN_REMINDER",
+      "tripId": "TRIP#123",
+      "eventId": "EVT-002",
+      "channels": ["whatsapp", "push"]
+    }
+  }
+}
+```
+
+---
+
+# 8. Rate Limiting e Proteção de Custos
+
+## Problema
+
+APIs externas são caras. Um usuário mal-intencionado (ou bug) pode gerar milhares de chamadas.
+
+## Solução: Camadas de Proteção
+
+### 1. WAF Rate Limiting (Camada Edge)
+
+```yaml
+# Regra WAF
+RateLimit:
+  Limit: 100          # requests
+  Period: 300         # 5 minutos
+  Action: BLOCK
+  Scope: IP
+```
+
+### 2. API Gateway Throttling
+
+```yaml
+# Por usuário autenticado
+UsagePlan:
+  Quota:
+    Limit: 1000       # requests/dia
+    Period: DAY
+  Throttle:
+    BurstLimit: 50    # requests simultâneos
+    RateLimit: 10     # requests/segundo
+```
+
+### 3. Circuit Breaker (Lambdas)
+
+```typescript
+// Usando biblioteca como 'opossum'
+const circuitBreaker = new CircuitBreaker(callBookingAPI, {
+  timeout: 5000,           // 5s timeout
+  errorThresholdPercentage: 50,
+  resetTimeout: 30000      // 30s antes de tentar novamente
+});
+```
+
+### 4. Cache Agressivo (ElastiCache Redis)
+
+```typescript
+// Estratégia de cache
+const cacheStrategy = {
+  'places_search': { ttl: '24h', key: 'places:{query}:{location}' },
+  'hotel_prices': { ttl: '1h', key: 'hotel:{id}:{dates}' },
+  'flight_prices': { ttl: '15m', key: 'flight:{origin}:{dest}:{date}' },
+  'weather': { ttl: '3h', key: 'weather:{city}:{date}' }
+};
+```
+
+### 5. Orçamento por Usuário
+
+```typescript
+interface UserBudget {
+  monthlyApiCredits: number;    // Ex: 1000 créditos
+  usedCredits: number;
+  resetDate: string;
+}
+
+// Custo por operação
+const operationCosts = {
+  'search_hotels': 5,
+  'search_flights': 10,
+  'generate_itinerary': 20,
+  'ai_chat_message': 1
+};
+```
+
+---
+
+# 9. Observabilidade e Monitoramento
+
+## Stack de Observabilidade
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    CloudWatch                            │
+│  ┌─────────┐  ┌─────────┐  ┌─────────────┐              │
+│  │  Logs   │  │ Metrics │  │   Alarms    │              │
+│  └─────────┘  └─────────┘  └─────────────┘              │
+└─────────────────────────────────────────────────────────┘
+         │              │              │
+         ▼              ▼              ▼
+┌─────────────┐  ┌─────────────┐  ┌─────────────┐
+│  X-Ray      │  │  Dashboard  │  │    SNS      │
+│  (Traces)   │  │  (Grafana)  │  │  (Alertas)  │
+└─────────────┘  └─────────────┘  └─────────────┘
+```
+
+## Métricas Críticas
+
+| Métrica | Threshold | Ação |
+|---------|-----------|------|
+| Lambda Error Rate | > 5% | Alerta Slack |
+| API Latency P99 | > 3s | Investigar |
+| DynamoDB Throttling | > 0 | Aumentar capacidade |
+| WhatsApp Delivery Rate | < 95% | Verificar templates |
+| Bedrock Token Usage | > 80% budget | Alerta + rate limit |
+
+## Logs Estruturados
+
+```typescript
+// Formato padronizado de log
+const log = {
+  timestamp: '2025-01-15T10:00:00Z',
+  level: 'INFO',
+  service: 'trip-planner',
+  traceId: 'abc-123',
+  userId: 'user-456',
+  tripId: 'trip-789',
+  action: 'generate_itinerary',
+  duration: 1500,
+  metadata: {
+    citiesCount: 4,
+    daysCount: 21,
+    modelUsed: 'claude-3-sonnet'
+  }
+};
+```
+
+---
+
+# 10. Segurança e Compliance (LGPD/GDPR)
+
+## Dados Sensíveis
+
+| Dado | Classificação | Tratamento |
+|------|---------------|------------|
+| Passaporte (foto) | **PII Crítico** | Criptografia S3 SSE-KMS, acesso auditado |
+| WhatsApp ID | PII | Hash para analytics, original só para operação |
+| Histórico de chat | PII | TTL de 2 anos, exportável pelo usuário |
+| Dados de pagamento | **PCI** | Não armazenamos - Stripe/gateway externo |
+| Localização | PII | Opt-in explícito, granularidade reduzida |
+
+## Criptografia
+
+```yaml
+# S3 Bucket Policy
+Encryption:
+  - ServerSideEncryptionByDefault:
+      SSEAlgorithm: aws:kms
+      KMSMasterKeyID: alias/n-agent-documents
+
+# DynamoDB
+Encryption:
+  - SSESpecification:
+      SSEEnabled: true
+      SSEType: KMS
+```
+
+## Direitos do Titular (LGPD Art. 18)
+
+| Direito | Implementação |
+|---------|---------------|
+| **Acesso** | Endpoint GET /api/v1/me/data (export JSON) |
+| **Correção** | Edição no painel + chat com IA |
+| **Exclusão** | DELETE /api/v1/me + job de limpeza em 30 dias |
+| **Portabilidade** | Export em formato padrão (JSON/CSV) |
+| **Revogação** | Toggle de consentimentos no painel |
+
+## Auditoria
+
+```typescript
+interface AuditLog {
+  timestamp: string;
+  actor: string;          // userId ou 'system'
+  action: string;         // 'read_passport', 'delete_trip'
+  resource: string;       // 'user:123', 'trip:456'
+  ip: string;
+  userAgent: string;
+  result: 'success' | 'denied' | 'error';
+}
+```
+
+---
+
+# 11. Disaster Recovery e Backup
+
+## Estratégia de Backup
+
+| Recurso | Frequência | Retenção | Destino |
+|---------|------------|----------|---------|
+| DynamoDB | Contínuo (PITR) | 35 dias | Mesma região |
+| DynamoDB | Diário (snapshot) | 90 dias | S3 cross-region |
+| S3 Documentos | Versionamento | 30 versões | Replicação us-east-1 → eu-west-1 |
+| Secrets | Automático | N/A | Secrets Manager |
+
+## RPO e RTO
+
+| Cenário | RPO | RTO |
+|---------|-----|-----|
+| Falha de Lambda | 0 | < 1min (retry automático) |
+| Falha de região | < 1h | < 4h (failover manual) |
+| Corrupção de dados | < 5min (PITR) | < 1h |
+| Ataque/Breach | N/A | < 24h (investigação) |
+
+## Backup Cross-Region
+
+**Não implementaremos multi-region ativo/ativo ou ativo/standby no MVP.** Apenas backup automático em outra região.
+
+```
+    ┌─────────────────┐
+    │   us-east-1     │
+    │   (Production)  │
+    │                 │
+    │  ┌──────────┐   │
+    │  │ DynamoDB │   │
+    │  └────┬─────┘   │
+    └───────┼─────────┘
+            │
+            │ Daily Snapshot
+            │ (Automated)
+            ▼
+    ┌─────────────────┐
+    │  sa-east-1      │
+    │  (Backup Only)  │
+    │                 │
+    │  ┌──────────┐   │
+    │  │ S3 Backup│   │
+    │  └──────────┘   │
+    └─────────────────┘
+```
+
+**Vantagens desta abordagem:**
+- ✅ Custo reduzido (não duplica infraestrutura)
+- ✅ Compliance com LGPD (backup em território nacional - sa-east-1)
+- ✅ Recuperação possível em caso de desastre
+- ❌ RTO maior (~4-8h para restaurar manualmente)
+
+---
+
+# 12. Estimativa de Custos AWS (MVP)
+
+## Cenário: 1.000 usuários ativos, 100 viagens/mês
+
+| Serviço | Uso Estimado | Custo/mês |
+|---------|--------------|-----------|
+| **Lambda** | 500K invocações | ~$5 |
+| **API Gateway** | 1M requests | ~$3.50 |
+| **DynamoDB** | 10GB + 5M reads | ~$15 |
+| **S3** | 50GB storage | ~$1.15 |
+| **CloudFront** | 100GB transfer | ~$8.50 |
+| **Bedrock (Claude)** | 10M tokens | ~$30 |
+| **Cognito** | 1K MAU | Free |
+| **EventBridge** | 100K eventos | ~$1 |
+| **SES** | 10K emails | ~$1 |
+| **CloudWatch** | Logs + métricas | ~$10 |
+| **ElastiCache** | t3.micro | ~$12 |
+| **Secrets Manager** | 5 secrets | ~$2 |
+
+### **Total Estimado: ~$90/mês**
+
+## APIs Externas
+
+| API | Uso Estimado | Custo/mês |
+|-----|--------------|-----------|
+| Google Maps | 5K requests | ~$0 (crédito $200) |
+| Gemini 2.0 + Search | 2K queries | ~$70 |
+| WhatsApp | 1K conversas | ~$0 (free tier) |
+| Booking Affiliate | N/A | $0 (comissão) |
+| Airbnb (scraping) | 3K requests | ~$50 |
+| AviationStack | 5K requests | ~$49 |
+| OpenWeather | 10K calls | ~$0 (free tier) |
+
+### **Total Infra + APIs: ~$250-300/mês no MVP**
+
+**Nota**: Com 100 viagens pagas/mês a R$ 149 (Concierge), receita bruta = R$ 14.900 (~$3.000). **Margem operacional saudável de ~90%.**
+
+---
 
 Próximo passo que posso fazer por você: Quer que eu escreva um Prompt de Sistema (System Prompt) inicial para o Amazon Bedrock Agent? Posso criar as instruções que definem a **personalidade** do agente e as regras estritas de como ele deve usar essas ferramentas JSON que definimos acima.

@@ -8,6 +8,38 @@ Um serviço de plataforma que vende pacotes de um assistente pessoal para organi
 
 O objetivo é apoiar pessoas normais a entender, estruturar, organizar a viagem. Também, vai oferecer serviços relacionado a turismo dentro da plataforma.
 
+---
+
+# Modelo de Negócio e Monetização
+
+## Planos e Pricing
+
+| Plano | Preço | Limites | Funcionalidades |
+|-------|-------|---------|-----------------|
+| **Gratuito** | R$ 0 | 1 viagem/ano, até 4 pessoas | Fases 1-2 (Conhecimento + Planejamento básico), sem concierge |
+| **Planejador** | R$ 49/viagem | Ilimitado pessoas, 1 viagem ativa | Fases 1-3, documentos ricos, versionamento de roteiros |
+| **Concierge** | R$ 149/viagem | Ilimitado pessoas, 3 viagens ativas | Todas as fases, alertas em tempo real, suporte prioritário |
+| **Família (Anual)** | R$ 399/ano | Até 5 viagens/ano, ilimitado pessoas | Tudo do Concierge + desconto em parceiros |
+
+## Fontes de Receita Adicionais
+
+1. **Comissões de Afiliados**: 3-8% em reservas via links de Booking/Airbnb/Skyscanner
+2. **Serviços Premium**: Impressão de álbum de memórias (R$ 89-199)
+3. **Parcerias B2B**: Agências de viagem usando a plataforma white-label
+4. **Upsell de Seguros**: Comissão em seguros viagem vendidos via plataforma
+
+## KPIs de Sucesso do MVP
+
+| Métrica | Meta 6 meses | Meta 12 meses |
+|---------|--------------|---------------|
+| Usuários cadastrados | 1.000 | 5.000 |
+| Conversão Free → Paid | 8% | 12% |
+| NPS pós-viagem | > 40 | > 50 |
+| Retenção (2ª viagem) | 30% | 45% |
+| Receita média/usuário pago | R$ 80 | R$ 120 |
+
+---
+
 # Requisitos funcionais
 
 ## Interface com o usuário
@@ -170,5 +202,105 @@ Para realizar estas capacidades, temos que entregar as seguintes ferramentas par
 
 ## Informações sobre o MVP
 
+### Escopo Reduzido para MVP (Fase 1 - 3 meses)
+
+Para garantir viabilidade financeira e time-to-market adequado, o MVP terá escopo reduzido:
+
+**Integrações Core (obrigatórias):**
+- ✅ WhatsApp Business API (interface principal)
+- ✅ Google Maps Platform (Places + Directions)
+- ✅ Booking.com Affiliate API (hospedagem)
+- ✅ Airbnb API (hospedagem alternativa)
+- ✅ AviationStack API (dados de voos e aeroportos em tempo real)
+- ✅ OpenWeather API (clima básico)
+- ✅ Gemini 2.0 Flash + Google Search Grounding (IA com busca web atualizada)
+
+**Integrações Fase 2 (pós-validação - 3 meses após MVP):**
+- Skyscanner/Amadeus (busca de voos para compra)
+- Google Calendar (sincronização de agenda)
+- Open Exchange Rates (câmbio em tempo real)
+- DeepL/Google Translate (tradução)
+
+**Integrações Fase 3 (escala - 6+ meses):**
+- Airbnb, TripAdvisor, tradução, OCR de documentos
+
+### Funcionalidades do MVP
+
+| Funcionalidade | MVP | Fase 2 | Fase 3 |
+|----------------|-----|--------|--------|
+| Chat WhatsApp | ✅ | ✅ | ✅ |
+| Chat Web | ✅ | ✅ | ✅ |
+| Fase Conhecimento | ✅ | ✅ | ✅ |
+| Fase Planejamento | ✅ (básico) | ✅ (completo) | ✅ |
+| Fase Contratação | ❌ (links apenas) | ✅ (parcial) | ✅ |
+| Fase Concierge | ❌ | ✅ (básico) | ✅ |
+| Fase Memórias | ❌ | ❌ | ✅ |
+| Documentos Ricos | ✅ (PDF simples) | ✅ (interativo) | ✅ |
+| Versionamento Roteiros | ❌ | ✅ | ✅ |
+| Multi-moeda | ❌ | ✅ | ✅ |
+| OCR Passaporte | ❌ | ❌ | ✅ |
+
+### Limitações Conhecidas do MVP
+
 - Não faremos a contratação de serviços automática, usando o agente, apenas vamos avaliar e indicar as melhores ofertas/serviços encontradas nas integrações para atender o roteiro e oferecer o link para a contratação. Mas no futuro queremos integrar as informações.
 - [Estratégia]: Deixar claro nos Termos de Uso que a responsabilidade final da reserva (datas e nomes corretos) é do usuário, já que a IA apenas sugere o link, para evitar processos caso o usuário compre algo errado.
+- **Sem modo offline real**: Apenas envio antecipado de informações via WhatsApp
+- **Sem integração de pagamentos in-app**: Redirecionamento para sites parceiros
+- **Grupos limitados a 10 pessoas**: Para controlar complexidade inicial
+
+---
+
+# Gestão de Grupos e Permissões
+
+## Modelo de Acesso Multiusuário
+
+### Papéis Disponíveis
+
+| Papel | Permissões |
+|-------|------------|
+| **OWNER** | Tudo: editar, excluir, convidar, pagar, ver financeiro |
+| **ADMIN** | Editar roteiro, convidar membros, ver tudo exceto financeiro |
+| **EDITOR** | Editar apenas itens próprios, sugerir alterações |
+| **VIEWER** | Apenas visualização, receber alertas |
+
+### Fluxo de Convite
+
+1. Owner cria viagem e define orçamento
+2. Owner convida membros via WhatsApp ou email
+3. Membro recebe link único com token temporário (7 dias)
+4. Membro aceita e cria conta (ou vincula existente)
+5. Owner aprova e define papel do membro
+
+### Split de Custos (Fase 2)
+
+- Dashboard mostrando "Minha parte" vs "Total da viagem"
+- Integração futura com Splitwise ou cálculo interno
+- Notificação de "Fulano pagou R$ X, falta você pagar R$ Y"
+
+---
+
+# Fluxos Adicionais
+
+## 7. Cancelamento e Reembolso
+
+- Usuário pode cancelar plano a qualquer momento
+- Reembolso proporcional se cancelar antes de 50% do período
+- Dados mantidos por 90 dias após cancelamento (LGPD)
+- Possibilidade de "pausar" viagem sem perder dados
+
+## 8. Onboarding Gamificado
+
+- Progress bar: "Sua viagem está 40% planejada"
+- Conquistas: "Primeiro hotel escolhido! 🏨"
+- Checklist visual de tarefas pendentes por membro
+- Comparativo: "Viajantes como você geralmente..."
+
+## 9. Cenários de Crise Cobertos
+
+| Cenário | Ação da IA |
+|---------|------------|
+| Perda de passaporte | Endereço do consulado, documentos necessários, template de BO |
+| Greve de transporte | Monitorar notícias, sugerir alternativas, recalcular roteiro |
+| Emergência médica | Contato do seguro, hospitais próximos, tradução de sintomas |
+| Voo cancelado | Direitos do passageiro, rebooking, compensação |
+| Overbooking hotel | Template de reclamação, alternativas próximas |

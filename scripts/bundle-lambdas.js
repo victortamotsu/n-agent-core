@@ -1,5 +1,23 @@
 const esbuild = require('esbuild');
 const path = require('path');
+const fs = require('fs');
+
+// Plugin to resolve monorepo packages
+const monorepoPlugin = {
+  name: 'monorepo',
+  setup(build) {
+    build.onResolve({ filter: /^@n-agent\// }, (args) => {
+      const packageName = args.path.split('/')[1]; // Get package name after @n-agent/
+      const packagePath = path.join(__dirname, '../packages', packageName, 'src', 'index.ts');
+      
+      if (fs.existsSync(packagePath)) {
+        return { path: packagePath };
+      }
+      
+      return null;
+    });
+  },
+};
 
 const services = ['whatsapp-bot', 'trip-planner', 'integrations'];
 
@@ -18,6 +36,7 @@ async function buildAll() {
       external: ['aws-sdk'], // AWS SDK is provided by Lambda runtime
       sourcemap: true,
       minify: true,
+      plugins: [monorepoPlugin],
     });
     
     console.log(`✓ ${service} bundled successfully`);

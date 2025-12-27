@@ -23,6 +23,15 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Create placeholder ZIPs for Lambda
+        run: |
+          mkdir -p services/whatsapp-bot services/trip-planner services/integrations
+          echo "placeholder" > placeholder.txt
+          zip services/whatsapp-bot/whatsapp-bot.zip placeholder.txt
+          zip services/trip-planner/trip-planner.zip placeholder.txt
+          zip services/integrations/integrations.zip placeholder.txt
+          rm placeholder.txt
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -95,6 +104,12 @@ jobs:
           aws lambda update-function-code \
             --function-name n-agent-trip-planner-${{ env.ENVIRONMENT }} \
             --zip-file fileb://services/trip-planner/trip-planner.zip
+          
+          # Integrations
+          cd services/integrations/dist && zip -r ../integrations.zip . && cd ../../..
+          aws lambda update-function-code \
+            --function-name n-agent-integrations-${{ env.ENVIRONMENT }} \
+            --zip-file fileb://services/integrations/integrations.zip
 
   deploy-frontend:
     name: Deploy Frontend to S3

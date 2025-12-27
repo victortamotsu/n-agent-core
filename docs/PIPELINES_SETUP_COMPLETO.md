@@ -252,9 +252,11 @@ terraform force-unlock LOCK_ID
 
 - [x] Usuário IAM `github-actions-n-agent` criado
 - [x] Access Keys obtidas e guardadas com segurança  
-- [x] Secrets `AWS_ACCESS_KEY_ID` e `AWS_SECRET_ACCESS_KEY` configurados no GitHub
+- [x] Secrets `AWS_ACCESS_KEY_ID_DEV` e `AWS_SECRET_ACCESS_KEY_DEV` configurados
 - [x] Secrets `AWS_ACCESS_KEY_ID_PROD` e `AWS_SECRET_ACCESS_KEY_PROD` configurados
+- [x] Secret `SNYK_TOKEN` configurado
 - [x] Pipeline CI roda com sucesso
+- [x] Snyk scaneando 9 projetos (163 dependências) - 0 vulnerabilidades!
 - [x] Terraform aplica infraestrutura com sucesso
 - [x] Recursos AWS criados (DynamoDB: n-agent-chat-prod, n-agent-core-prod)
 - [x] Recursos AWS criados (S3: n-agent-assets-prod, n-agent-documents-prod)

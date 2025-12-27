@@ -124,31 +124,37 @@ pnpm dev
 Para configurar as credenciais AWS e GCP para as pipelines:
 
 ➡️ **[Guia Rápido de Credenciais](./docs/QUICKSTART_CREDENTIALS.md)** (5 minutos)  
-➡️ **[Guia Completo](./docs/SETUP_CREDENTIALS.md)** (documentação detalhada)
+➡️ **[Guia Completo](./docs/SETUP_CREDENTIALS.md)** (documentação detalhada)  
+➡️ **[Boas Práticas de Ambientes](./docs/BOAS_PRATICAS_AMBIENTES.md)** (separação dev/prod)
 
-**Secrets necessários:**
-- `AWS_ACCESS_KEY_ID`
-- `AWS_SECRET_ACCESS_KEY`
+**Secrets necessários (com sufixos!):**
+- `AWS_ACCESS_KEY_ID_DEV` / `AWS_ACCESS_KEY_ID_PROD`
+- `AWS_SECRET_ACCESS_KEY_DEV` / `AWS_SECRET_ACCESS_KEY_PROD`
+- `SNYK_TOKEN` (scanner de segurança)
 - `GCP_SERVICE_ACCOUNT_KEY` (Semana 8+)
-- `GOOGLE_MAPS_API_KEY` (Semana 8+)
+- `GOOGLE_MAPS_API_KEY_DEV` / `GOOGLE_MAPS_API_KEY_PROD` (Semana 8+)
 
 ## 📚 Documentação
 
 - [Proposta Inicial](./promtps/proposta_inicial.md)
 - [Proposta Técnica](./promtps/proposta_técnica.md)
 - [Plano de Implementação](./promtps/fases_implementacao/)
-- [Setup de Credenciais](./docs/SETUP_CREDENTIALS.md)
-- [Quick Start - Credenciais](./docs/QUICKSTART_CREDENTIALS.md)
+- [Quick Start - Credenciais](./docs/QUICKSTART_CREDENTIALS.md) ⚡
+- [Setup Completo de Credenciais](./docs/SETUP_CREDENTIALS.md)
+- [Boas Práticas de Ambientes](./docs/BOAS_PRATICAS_AMBIENTES.md) 🏗️
+- [Pipelines - Setup Completo](./docs/PIPELINES_SETUP_COMPLETO.md)
 
 ## 🤝 Fase Atual
 
-**Fase 1 - Fundação (Semana 1)** ✅
+**Fase 1 - Fundação (Semana 1)** ✅ **COMPLETA**
 
 - [x] Setup do monorepo
 - [x] Configuração de TypeScript, ESLint e Prettier
 - [x] Estrutura de apps, packages e services
 - [x] Infraestrutura base (Terraform)
-- [ ] Instalação de dependências (próximo passo)
+- [x] CI/CD com GitHub Actions
+- [x] Deploy automático em AWS
+- [x] Recursos AWS criados (DynamoDB, S3, IAM)
 
 ## 📝 Licença
 

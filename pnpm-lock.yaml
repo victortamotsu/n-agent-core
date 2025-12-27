@@ -137,6 +137,9 @@ importers:
         specifier: workspace:*
         version: link:../../packages/logger
     devDependencies:
+      '@types/aws-lambda':
+        specifier: ^8.10.133
+        version: 8.10.159
       '@types/node':
         specifier: ^20.11.5
         version: 20.19.27

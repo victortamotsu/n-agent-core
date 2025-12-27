@@ -11,6 +11,7 @@ output "s3_buckets" {
   value = {
     documents = "n-agent-documents-${var.environment}"
     assets    = "n-agent-assets-${var.environment}"
+    web       = "n-agent-web-${var.environment}"
   }
 }
 

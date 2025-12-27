@@ -18,6 +18,17 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Create placeholder ZIPs for Lambda
+        run: |
+          mkdir -p services/whatsapp-bot services/trip-planner services/integrations services/auth services/authorizer
+          echo "placeholder" > placeholder.txt
+          zip services/whatsapp-bot/whatsapp-bot.zip placeholder.txt
+          zip services/trip-planner/trip-planner.zip placeholder.txt
+          zip services/integrations/integrations.zip placeholder.txt
+          zip services/auth/auth.zip placeholder.txt
+          zip services/authorizer/authorizer.zip placeholder.txt
+          rm placeholder.txt
+
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -101,6 +112,48 @@ jobs:
           aws lambda update-function-code \
             --function-name n-agent-trip-planner-${{ env.ENVIRONMENT }} \
             --zip-file fileb://services/trip-planner/trip-planner.zip \
+            || echo "Lambda function not found, skipping..."
+
+      - name: Package Lambda - Integrations
+        working-directory: ./services/integrations
+        run: |
+          cd dist
+          zip -r ../integrations.zip .
+          cd ..
+
+      - name: Deploy Lambda - Integrations
+        run: |
+          aws lambda update-function-code \
+            --function-name n-agent-integrations-${{ env.ENVIRONMENT }} \
+            --zip-file fileb://services/integrations/integrations.zip \
+            || echo "Lambda function not found, skipping..."
+
+      - name: Package Lambda - Auth
+        working-directory: ./services/auth
+        run: |
+          cd dist
+          zip -r ../auth.zip .
+          cd ..
+
+      - name: Deploy Lambda - Auth
+        run: |
+          aws lambda update-function-code \
+            --function-name n-agent-auth-${{ env.ENVIRONMENT }} \
+            --zip-file fileb://services/auth/auth.zip \
+            || echo "Lambda function not found, skipping..."
+
+      - name: Package Lambda - Authorizer
+        working-directory: ./services/authorizer
+        run: |
+          cd dist
+          zip -r ../authorizer.zip .
+          cd ..
+
+      - name: Deploy Lambda - Authorizer
+        run: |
+          aws lambda update-function-code \
+            --function-name n-agent-authorizer-${{ env.ENVIRONMENT }} \
+            --zip-file fileb://services/authorizer/authorizer.zip \
             || echo "Lambda function not found, skipping..."
 
   deploy-frontend:

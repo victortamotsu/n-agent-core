@@ -1,0 +1,22 @@
+{
+  "version": "2.0",
+  "routeKey": "POST /api/v1/trips",
+  "rawPath": "/api/v1/trips",
+  "rawQueryString": "",
+  "headers": {
+    "accept": "application/json",
+    "content-type": "application/json"
+  },
+  "requestContext": {
+    "http": {
+      "method": "POST",
+      "path": "/api/v1/trips",
+      "protocol": "HTTP/1.1",
+      "sourceIp": "127.0.0.1"
+    },
+    "routeKey": "POST /api/v1/trips",
+    "stage": "$default"
+  },
+  "body": "{\"name\":\"Viagem para Paris\",\"startDate\":\"2025-06-01\",\"endDate\":\"2025-06-10\",\"destination\":\"Paris, França\"}",
+  "isBase64Encoded": false
+}

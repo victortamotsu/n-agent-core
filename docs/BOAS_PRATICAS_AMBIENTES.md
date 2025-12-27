@@ -1,17 +1,163 @@
 # 🏗️ Boas Práticas de Separação de Ambientes
 
 **Data**: 27/12/2025  
-**Versão**: 1.0
+**Versão**: 1.1
 
 ---
 
 ## 📋 Índice
 
-1. [Nomenclatura Padronizada](#nomenclatura-padronizada)
-2. [GitHub Secrets](#github-secrets)
-3. [Recursos AWS](#recursos-aws)
-4. [Snyk - Security Scanner](#snyk-security-scanner)
-5. [Estratégias de Separação](#estratégias-de-separação)
+1. [Desenvolvimento de Lambdas](#desenvolvimento-de-lambdas)
+2. [Nomenclatura Padronizada](#nomenclatura-padronizada)
+3. [GitHub Secrets](#github-secrets)
+4. [Recursos AWS](#recursos-aws)
+5. [Snyk - Security Scanner](#snyk-security-scanner)
+6. [Estratégias de Separação](#estratégias-de-separação)
+
+---
+
+## 🚀 Desenvolvimento de Lambdas
+
+### ⚡ Regra de Ouro: **SEMPRE teste localmente ANTES de fazer deploy**
+
+Evite executar pipelines desnecessariamente. O fluxo correto é:
+
+#### 📌 Workflow Recomendado
+
+```mermaid
+graph LR
+    A[Editar Código] --> B[Testar Localmente]
+    B --> C{Funcionou?}
+    C -->|Não| A
+    C -->|Sim| D[Quick Deploy Dev]
+    D --> E{OK na AWS?}
+    E -->|Não| F[Ver Logs]
+    F --> A
+    E -->|Sim| G[Commit + Push]
+    G --> H[CI/CD Pipeline]
+```
+
+### 🎯 Métodos de Teste (em ordem de velocidade)
+
+#### 1. **Debug Local com AWS Toolkit** (MAIS RÁPIDO - 0 custos)
+
+```powershell
+# 1. Bundle as Lambdas
+node scripts/bundle-lambdas.js
+
+# 2. Pressione F5 no VSCode
+# 3. Coloque breakpoints
+# 4. Veja variáveis em tempo real
+```
+
+**Vantagens:**
+- ⚡ Instantâneo (sem deploy)
+- 🐛 Debug completo com breakpoints
+- 💰 Zero custos AWS
+- 🔄 Iteração ultra-rápida
+
+**Quando usar:** Desenvolvimento intenso, debug de lógica complexa
+
+📖 **Guia Completo:** [docs/AWS_TOOLKIT_GUIA.md](./AWS_TOOLKIT_GUIA.md)
+
+---
+
+#### 2. **Quick Deploy para Dev** (RÁPIDO - ~10s)
+
+```powershell
+# Deploy direto sem CI/CD
+.\scripts\quick-deploy.ps1 -Service trip-planner -Environment dev
+
+# Teste na AWS real
+curl https://j4f1m6rrak.execute-api.us-east-1.amazonaws.com/health
+
+# Ver logs em tempo real
+pnpm run logs:trips
+```
+
+**Vantagens:**
+- 🎯 Testa no ambiente real AWS
+- ⚡ Deploy em ~10 segundos
+- 📊 Logs reais do CloudWatch
+- 🔄 Pula CI/CD para iteração rápida
+
+**Quando usar:** Validar comportamento na AWS, testar integrações reais
+
+---
+
+#### 3. **CI/CD Pipeline** (LENTO - ~2-3min)
+
+```powershell
+git add .
+git commit -m "feat: nova funcionalidade"
+git push origin main
+```
+
+**Vantagens:**
+- ✅ Testes automatizados
+- 🔒 Security scan (Snyk)
+- 📦 Deploy automático
+- 🌍 Deploy para prod
+
+**Quando usar:** Código validado e pronto para produção
+
+---
+
+### 🚫 Anti-Padrões (O que NÃO fazer)
+
+❌ **Commitar código sem testar localmente**
+```powershell
+# MAU - dispara pipeline sem garantia que funciona
+git commit -m "tentativa 1"
+git push
+# ... aguarda 2min, pipeline falha
+git commit -m "tentativa 2"
+git push
+# ... aguarda 2min, pipeline falha novamente
+```
+
+✅ **Testar localmente primeiro**
+```powershell
+# BOM - valida antes do deploy
+node scripts/bundle-lambdas.js
+# F5 para debugar localmente
+# Código funcionando? Agora sim:
+.\scripts\quick-deploy.ps1 -Service trip-planner -Environment dev
+# OK na AWS? Commit!
+git commit -m "feat: funcionalidade validada"
+git push
+```
+
+---
+
+### 📊 Comparação de Métodos
+
+| Método | Tempo | Custo AWS | Debug | Ambiente Real |
+|--------|-------|-----------|-------|---------------|
+| Debug Local (F5) | 0s | $0 | ✅ Completo | ❌ Simulado |
+| Quick Deploy Dev | ~10s | $0.001 | 📝 Logs | ✅ Real |
+| CI/CD Pipeline | ~2-3min | $0.01 | 📝 Logs | ✅ Real |
+
+---
+
+### 💡 Dicas de Produtividade
+
+1. **Use console.log() generosamente durante desenvolvimento**
+   ```typescript
+   console.log('Debug:', { method, path, body });
+   // Visível em: pnpm run logs:trips
+   ```
+
+2. **Mantenha Docker rodando** para debug local funcionar instantaneamente
+
+3. **Crie eventos de teste personalizados** em `events/*.json` para seus casos de uso
+
+4. **Use environment variables** para diferenciar comportamento local vs AWS
+   ```typescript
+   if (process.env.ENVIRONMENT === 'local') {
+     // Mock de DynamoDB
+   }
+   ```
 
 ---
 

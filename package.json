@@ -14,7 +14,12 @@
     "test": "turbo run test",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
-    "clean": "turbo run clean && rm -rf node_modules"
+    "clean": "turbo run clean && rm -rf node_modules",
+    "bundle:lambda": "node scripts/bundle-lambdas.js",
+    "quick-deploy": "pwsh scripts/quick-deploy.ps1",
+    "logs:whatsapp": "aws logs tail /aws/lambda/n-agent-whatsapp-bot-dev --follow",
+    "logs:trips": "aws logs tail /aws/lambda/n-agent-trip-planner-dev --follow",
+    "logs:integrations": "aws logs tail /aws/lambda/n-agent-integrations-dev --follow"
   },
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^6.21.0",

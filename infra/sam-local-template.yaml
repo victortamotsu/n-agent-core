@@ -1,0 +1,88 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: n-agent Lambda Functions - Local Development Template
+
+Globals:
+  Function:
+    Timeout: 30
+    Runtime: nodejs18.x
+    Environment:
+      Variables:
+        ENVIRONMENT: local
+        AWS_REGION: us-east-1
+
+Resources:
+  TripPlannerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: services/trip-planner/dist/
+      Handler: index.handler
+      MemorySize: 1024
+      Timeout: 60
+      Environment:
+        Variables:
+          DYNAMODB_TABLE_CORE: n-agent-core-local
+          S3_BUCKET_DOCUMENTS: n-agent-documents-local
+      Events:
+        HealthCheck:
+          Type: Api
+          Properties:
+            Path: /health
+            Method: get
+        CreateTrip:
+          Type: Api
+          Properties:
+            Path: /api/v1/trips
+            Method: post
+        GetTrip:
+          Type: Api
+          Properties:
+            Path: /api/v1/trips/{id}
+            Method: get
+
+  WhatsAppBotFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: services/whatsapp-bot/dist/
+      Handler: index.handler
+      MemorySize: 512
+      Timeout: 30
+      Environment:
+        Variables:
+          DYNAMODB_TABLE_CHAT: n-agent-chat-local
+          DYNAMODB_TABLE_CORE: n-agent-core-local
+          WEBHOOK_VERIFY_TOKEN: local_test_token
+      Events:
+        WebhookVerify:
+          Type: Api
+          Properties:
+            Path: /webhooks/whatsapp
+            Method: get
+        WebhookReceive:
+          Type: Api
+          Properties:
+            Path: /webhooks/whatsapp
+            Method: post
+
+  IntegrationsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: services/integrations/dist/
+      Handler: index.handler
+      MemorySize: 512
+      Timeout: 30
+      Events:
+        HealthCheck:
+          Type: Api
+          Properties:
+            Path: /integrations/health
+            Method: get
+
+Outputs:
+  TripPlannerApi:
+    Description: "API Gateway endpoint URL for Trip Planner function"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/health/"
+  
+  WhatsAppBotApi:
+    Description: "API Gateway endpoint URL for WhatsApp Bot function"
+    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/webhooks/whatsapp/"

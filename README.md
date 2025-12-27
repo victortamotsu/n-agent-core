@@ -109,11 +109,36 @@ pnpm dev
 - **staging** - Homologação
 - **prod** - Produção
 
+## � CI/CD
+
+### Pipelines do GitHub Actions
+
+| Workflow | Trigger | Descrição |
+|----------|---------|-----------|
+| **CI** | PR/Push para `main` ou `develop` | Lint, testes, build |
+| **Deploy Dev** | Push para `develop` | Deploy automático em DEV |
+| **Deploy Prod** | Push para `main` ou tags `v*` | Deploy em PRODUÇÃO |
+
+### Configurar Credenciais
+
+Para configurar as credenciais AWS e GCP para as pipelines:
+
+➡️ **[Guia Rápido de Credenciais](./docs/QUICKSTART_CREDENTIALS.md)** (5 minutos)  
+➡️ **[Guia Completo](./docs/SETUP_CREDENTIALS.md)** (documentação detalhada)
+
+**Secrets necessários:**
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET_ACCESS_KEY`
+- `GCP_SERVICE_ACCOUNT_KEY` (Semana 8+)
+- `GOOGLE_MAPS_API_KEY` (Semana 8+)
+
 ## 📚 Documentação
 
 - [Proposta Inicial](./promtps/proposta_inicial.md)
 - [Proposta Técnica](./promtps/proposta_técnica.md)
 - [Plano de Implementação](./promtps/fases_implementacao/)
+- [Setup de Credenciais](./docs/SETUP_CREDENTIALS.md)
+- [Quick Start - Credenciais](./docs/QUICKSTART_CREDENTIALS.md)
 
 ## 🤝 Fase Atual
 

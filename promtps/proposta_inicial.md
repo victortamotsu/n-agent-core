@@ -57,24 +57,30 @@ Teremos um site web público para:
 
 Os usuários poderão receber respostas da IA no formato de relatórios com conteúdo ricos, como imagens de mapas, links, tabelas, informações de preços, etc. Vamos usar a estrutura do site para exibir este conteúdo para o usuário.
 
-[Dúvida] Deveríamos ter um app para capturar a localização, dando mais informações sobre a viagem para o agente? Assim, conseguimos mais contexto. [Todo] Se seguirmos por este caminho, como trabalhar a privacidade dos dados?
+[Dúvida] Deveríamos ter um app mobile para capturar a localização, dando mais informações sobre a viagem para o agente? Assim, conseguimos mais contexto. [Todo] Se seguirmos por este caminho, como trabalhar a privacidade dos dados?
 
 ### Interação padrão do usuário
 
-Os inputs do usuário dará exclusivamente via chat com a IA "n-agent". O chat se dará em duas interfaces: chat via Whatsapp e chat via interface web, no site. Ambas interfaces devem suportar os seguintes tipos de input:
+Os inputs do usuário se dará exclusivamente via chat com a IA "n-agent" e via interface web para pequenas rotinas (como finalização de itens em listas de tarefas). O chat se dará em duas interfaces: chat via Whatsapp e chat via interface web, no site. Ambas interfaces devem suportar os seguintes tipos de input:
     
-- texto (o mais comum, com suporte a emoticons, links e formatação)
+- texto (o mais comum, com suporte a emoticons, links e formatação MD)
 - imagens 
-- audio
+- áudio
 - localização
 - documentos
-- Encaminhamento de mensagens: Permitir que o usuário encaminhe e-mails (ex: confirmações de reserva) ou mensagens de outros contatos diretamente para o bot.
+
+Interfaces especiais:
+
+- O usuário pode encaminhar e-mails (ex: confirmações de reserva) diretamente para um e-mail do bot. O reconhecimento da viagem se dará por contexto (endereço de e-mail do usuário e data da ação descrita).
+- O usuário poderá encaminhar mensagens de outros usuários via encaminhamento do Whatsapp para o bot guardar os registros. Por exemplo: "fiz a reserva do observatório The Edge para 23/05 para todos nós". 
+
 
 Os outputs podersão ser:
 
 - texto (com suporte a emoticons, links e formatação)
 - localização (um link para abertura do aplicativo de localização padrão do celular, como o Google Maps ou Apple Map)
 - Link para um documento rico, gerado e exibido em uma interface web com a resposta a solicitação do usuário.
+- Listas de tarefas ou dúvidas
 - Botões de Ação Rápida (Quick Replies): No WhatsApp e Web, oferecer botões como "Confirmar", "Ver Mais Detalhes", "Alterar Roteiro" para agilizar a interação e evitar digitação.
 
 ## Integrações e capacidades do agente
@@ -83,8 +89,10 @@ Vamos dividir este projeto em fases, sendo a fase atual o MVP do produto. Nesta 
 
 1. Fase de conhecimento do cliente e da viagem: é a fase onde montamos um dossiê de informações sobre a viagem, acompanhantes, objetivos (pessoais e do grupo de viagem), destinos, itinerário desejado, budget e datas. Estas informações devem ser persistidas e devem permear todas as fases posteriores.
     - [Requisito Adicional] Perfilamento de Risco e Acessibilidade: Identificar restrições alimentares, alergias, dificuldades de locomoção (acessibilidade) ou medos (ex: medo de avião) dos integrantes.
-2. Fase de planejamento da viagem: usando as informações do passo anterior, devemos estudar os requisitos para atingir os objetivos da viagem. Devemos apresentar um resumo e um detalhamento dos custos e esforços de atingir os objetivo, com timelines e riscos, para auxiliar na tomada de decisão dos roteiros. Esta é a fase mais complicada porque a viagem ainda pode estar em momento de definição da quantidade de destinos, quantidade de pessoas, etc. Devemos usar todas as ferramentas possíveis para diminuir custos e oferecer experiências para os usuários.
-    - [Requisito Adicional] Versionamento de Roteiros: O sistema deve permitir salvar "Versão A (Econômica)" e "Versão B (Conforto)" para comparação lado a lado.
+    - Entender restrições de locais e atrações por pessoa ou para todo o grupo. Por exemplo: medo de lugares fechados, medo de altura. Isso não deve limitar as sugestões, mas deve ajudar no rankeamento das opções.
+2. Fase de planejamento da viagem: usando as informações do passo anterior, devemos estudar os requisitos para atingir os objetivos da viagem. Devemos apresentar um resumo das atrações e um detalhamento dos custos e esforços de atingir os objetivos, com timelines e riscos, para auxiliar na tomada de decisão dos roteiros. Esta é a fase mais complicada porque a viagem ainda pode estar em momento de definição da quantidade de destinos, quantidade de pessoas, etc. Devemos usar todas as ferramentas possíveis para diminuir custos e oferecer experiências condizentes com os objetivos dos usuários.
+    - [Requisito Adicional] Versionamento de Roteiros: O sistema deve permitir salvar "Versão A (Econômica)" e "Versão B (Conforto)" para comparação lado a lado. Também tem que guardar versões das alterações dos roteiros para ajudar a entender motivações das alterações do roteiro.
+    - [Dúvida] Seria possível criar um roteiro onde os administradores do roteiro recebem sugestões de outros usuários e avaliam as sugestões para então incrementar no roteiro base? Por exemplo: o filho sugere uma adição de passar em uma livraria. O pai recebe esta alteração, com a IA calculando os impactos desta mudança no roteiro.
 3. Fase de contratação de serviços e gestão da viagem: é a fase onde vamos começar a concretizar a viagem, organizando os momentos certos de contratar serviços e organizar as informações da viagem, sempre com o cuidado de revisar cada aspecto da viagem para antecipar problemas para evitar transtornos para os usuários. Vamos guardar cada aspecto da viagem: agenda, locais, ingressos, custos, documentos, informações sobre os locais de visita, serviços contratados, etc.
     - [Sugestão] Gestão de Vouchers Offline: Garantir que todos os PDFs e QRCodes essenciais sejam enviados para o WhatsApp, Google Drive ou e-mail para acesso mesmo sem internet.
 4. Fase de execução da viagem (concierge): nesta fase já temos todos os serviços definidos e viagem começou! Vamos desde o início auxiliar a visita com resumos do roterio, mensagens com lembretes e informações, chat para tirar dúvidas ou auxiliar em casos de incidentes. A IA entraria em contato um pouco antes de cada evento para dar insights e informações para auxiliar em momentos chave, como o link para um ingresso um pouco antes do momento de entrar na atração ou informações sobre o portão de embarque e como fazer para chegar até o local. 

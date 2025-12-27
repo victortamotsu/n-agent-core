@@ -1073,7 +1073,3 @@ interface AuditLog {
 ### **Total Infra + APIs: ~$250-300/mês no MVP**
 
 **Nota**: Com 100 viagens pagas/mês a R$ 149 (Concierge), receita bruta = R$ 14.900 (~$3.000). **Margem operacional saudável de ~90%.**
-
----
-
-Próximo passo que posso fazer por você: Quer que eu escreva um Prompt de Sistema (System Prompt) inicial para o Amazon Bedrock Agent? Posso criar as instruções que definem a **personalidade** do agente e as regras estritas de como ele deve usar essas ferramentas JSON que definimos acima.

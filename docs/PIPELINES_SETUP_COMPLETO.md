@@ -250,12 +250,18 @@ terraform force-unlock LOCK_ID
 
 ## ✅ Checklist de Validação
 
-- [ ] Usuário IAM `github-actions-n-agent` criado
-- [ ] Access Keys obtidas e guardadas com segurança
-- [ ] Secrets `AWS_ACCESS_KEY_ID` e `AWS_SECRET_ACCESS_KEY` configurados no GitHub
-- [ ] Pipeline CI roda com sucesso em PR
-- [ ] Logs do GitHub Actions acessíveis
-- [ ] Documentação lida e compreendida
+- [x] Usuário IAM `github-actions-n-agent` criado
+- [x] Access Keys obtidas e guardadas com segurança  
+- [x] Secrets `AWS_ACCESS_KEY_ID` e `AWS_SECRET_ACCESS_KEY` configurados no GitHub
+- [x] Secrets `AWS_ACCESS_KEY_ID_PROD` e `AWS_SECRET_ACCESS_KEY_PROD` configurados
+- [x] Pipeline CI roda com sucesso
+- [x] Terraform aplica infraestrutura com sucesso
+- [x] Recursos AWS criados (DynamoDB: n-agent-chat-prod, n-agent-core-prod)
+- [x] Recursos AWS criados (S3: n-agent-assets-prod, n-agent-documents-prod)
+- [x] Logs do GitHub Actions acessíveis
+- [x] Documentação lida e compreendida
+- [ ] Lambdas criadas no Terraform (Semana 2)
+- [ ] Frontend deployado no S3 (Semana 2)
 
 ---
 

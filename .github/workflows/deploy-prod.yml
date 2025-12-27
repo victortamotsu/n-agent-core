@@ -81,8 +81,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Build all packages
-        run: pnpm build
+      - name: Bundle Lambda functions
+        run: node scripts/bundle-lambdas.js
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4

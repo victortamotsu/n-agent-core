@@ -124,7 +124,7 @@ resource "aws_s3_bucket_public_access_block" "documents" {
 resource "aws_lambda_function" "whatsapp_bot" {
   function_name = "${var.project_name}-whatsapp-bot-${var.environment}"
   role          = aws_iam_role.whatsapp_bot.arn
-  handler       = "webhook.handler"
+  handler       = "index.handler"
   runtime       = "nodejs18.x"
   timeout       = 30
   memory_size   = 512

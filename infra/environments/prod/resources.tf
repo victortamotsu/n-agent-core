@@ -123,7 +123,7 @@ resource "aws_s3_bucket_public_access_block" "documents" {
 # Lambda Functions
 resource "aws_lambda_function" "whatsapp_bot" {
   function_name = "${var.project_name}-whatsapp-bot-${var.environment}"
-  role          = aws_iam_role.whatsapp_bot_role.arn
+  role          = aws_iam_role.whatsapp_bot.arn
   handler       = "webhook.handler"
   runtime       = "nodejs18.x"
   timeout       = 30
@@ -147,7 +147,7 @@ resource "aws_lambda_function" "whatsapp_bot" {
 
 resource "aws_lambda_function" "trip_planner" {
   function_name = "${var.project_name}-trip-planner-${var.environment}"
-  role          = aws_iam_role.trip_planner_role.arn
+  role          = aws_iam_role.trip_planner.arn
   handler       = "index.handler"
   runtime       = "nodejs18.x"
   timeout       = 60
@@ -171,7 +171,7 @@ resource "aws_lambda_function" "trip_planner" {
 
 resource "aws_lambda_function" "integrations" {
   function_name = "${var.project_name}-integrations-${var.environment}"
-  role          = aws_iam_role.integrations_role.arn
+  role          = aws_iam_role.integrations.arn
   handler       = "index.handler"
   runtime       = "nodejs18.x"
   timeout       = 30

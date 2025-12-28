@@ -23,7 +23,7 @@ data "aws_iam_policy_document" "bedrock_agent_trust" {
     }
     condition {
       test     = "ArnLike"
-      values   = ["arn:${data.aws_partition.current.partition}:bedrock:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:agent/*"]
+      values   = ["arn:aws:bedrock:${var.aws_region}:${data.aws_caller_identity.current.account_id}:agent/*"]
       variable = "AWS:SourceArn"
     }
   }
@@ -37,9 +37,9 @@ data "aws_iam_policy_document" "bedrock_agent_permissions" {
       "bedrock:InvokeModelWithResponseStream"
     ]
     resources = [
-      "arn:${data.aws_partition.current.partition}:bedrock:${data.aws_region.current.name}::foundation-model/anthropic.claude-3-sonnet-20240229-v1:0",
-      "arn:${data.aws_partition.current.partition}:bedrock:${data.aws_region.current.name}::foundation-model/anthropic.claude-3-haiku-20240307-v1:0",
-      "arn:${data.aws_partition.current.partition}:bedrock:${data.aws_region.current.name}::foundation-model/anthropic.claude-3-5-sonnet-20241022-v2:0",
+      "arn:aws:bedrock:${var.aws_region}::foundation-model/anthropic.claude-3-sonnet-20240229-v1:0",
+      "arn:aws:bedrock:${var.aws_region}::foundation-model/anthropic.claude-3-haiku-20240307-v1:0",
+      "arn:aws:bedrock:${var.aws_region}::foundation-model/anthropic.claude-3-5-sonnet-20241022-v2:0",
     ]
   }
 
@@ -47,7 +47,7 @@ data "aws_iam_policy_document" "bedrock_agent_permissions" {
   statement {
     actions = ["lambda:InvokeFunction"]
     resources = [
-      "arn:${data.aws_partition.current.partition}:lambda:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:function:${var.project_name}-*"
+      "arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:${var.project_name}-*"
     ]
   }
 }
@@ -55,7 +55,6 @@ data "aws_iam_policy_document" "bedrock_agent_permissions" {
 resource "aws_iam_role" "bedrock_agent_role" {
   name               = "${var.project_name}-bedrock-agent-role"
   assume_role_policy = data.aws_iam_policy_document.bedrock_agent_trust.json
-  tags               = var.tags
 }
 
 resource "aws_iam_role_policy" "bedrock_agent_permissions" {
@@ -106,8 +105,6 @@ resource "aws_bedrockagent_agent" "n_agent" {
   EOT
 
   prepare_agent = true
-
-  tags = var.tags
 }
 
 # -----------------------------------------------------------------------------
@@ -118,8 +115,6 @@ resource "aws_bedrockagent_agent_alias" "prod" {
   agent_alias_name = "prod"
   agent_id         = aws_bedrockagent_agent.n_agent.agent_id
   description      = "Alias de produção do n-agent"
-
-  tags = var.tags
 }
 
 # -----------------------------------------------------------------------------
@@ -141,8 +136,6 @@ resource "aws_iam_role" "action_groups_role" {
       }
     ]
   })
-
-  tags = var.tags
 }
 
 resource "aws_iam_role_policy" "action_groups_dynamodb" {
@@ -205,8 +198,6 @@ resource "aws_iam_role" "ai_orchestrator_role" {
       }
     ]
   })
-
-  tags = var.tags
 }
 
 resource "aws_iam_role_policy" "ai_orchestrator_bedrock" {

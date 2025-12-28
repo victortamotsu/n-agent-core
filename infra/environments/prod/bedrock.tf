@@ -262,7 +262,7 @@ resource "aws_bedrockagent_agent_action_group" "trip_management" {
   skip_resource_in_use_check = true
 
   action_group_executor {
-    lambda = "arn:${data.aws_partition.current.partition}:lambda:${data.aws_region.current.name}:${data.aws_caller_identity.current.account_id}:function:${var.project_name}-action-groups"
+    lambda = "arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:${var.project_name}-action-groups"
   }
 
   api_schema {

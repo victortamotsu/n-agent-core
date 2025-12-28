@@ -76,6 +76,11 @@ resource "aws_dynamodb_table" "n_agent_chat" {
   }
 }
 
+# SES Email Identity
+resource "aws_ses_email_identity" "noreply" {
+  email = "noreply@n-agent.com"
+}
+
 # Cognito User Pool
 resource "aws_cognito_user_pool" "main" {
   name = "${var.project_name}-users-${var.environment}"
@@ -122,7 +127,9 @@ resource "aws_cognito_user_pool" "main" {
   auto_verified_attributes = ["email"]
 
   email_configuration {
-    email_sending_account = "COGNITO_DEFAULT"
+    email_sending_account = "DEVELOPER"
+    source_arn            = aws_ses_email_identity.noreply.arn
+    from_email_address    = "n-agent <noreply@n-agent.com>"
   }
 
   verification_message_template {

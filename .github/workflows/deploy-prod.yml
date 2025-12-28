@@ -194,7 +194,7 @@ jobs:
 
       - name: Health check - API
         run: |
-          response=$(curl -s -o /dev/null -w "%{http_code}" https://api.n-agent.com/health)
+          response=$(curl -s -o /dev/null -w "%{http_code}" https://j4f1m6rrak.execute-api.us-east-1.amazonaws.com/health)
           if [ $response -eq 200 ]; then
             echo "✅ API is healthy"
           else
@@ -204,7 +204,7 @@ jobs:
 
       - name: Health check - Frontend
         run: |
-          response=$(curl -s -o /dev/null -w "%{http_code}" https://n-agent.com)
+          response=$(curl -s -o /dev/null -w "%{http_code}" https://n-agent-web-prod.s3-website-us-east-1.amazonaws.com)
           if [ $response -eq 200 ]; then
             echo "✅ Frontend is healthy"
           else

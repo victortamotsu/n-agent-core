@@ -53,10 +53,24 @@ jobs:
       - name: Terraform Plan
         working-directory: ./infra/environments/prod
         run: terraform plan -out=tfplan
+        env:
+          TF_VAR_google_oauth_client_id: ${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}
+          TF_VAR_google_oauth_client_secret: ${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET }}
+          TF_VAR_facebook_app_id: ${{ secrets.FACEBOOK_APP_ID }}
+          TF_VAR_facebook_app_secret: ${{ secrets.FACEBOOK_APP_SECRET }}
+          TF_VAR_microsoft_client_id: ${{ secrets.MICROSOFT_CLIENT_ID }}
+          TF_VAR_microsoft_client_secret: ${{ secrets.MICROSOFT_CLIENT_SECRET }}
 
       - name: Terraform Apply
         working-directory: ./infra/environments/prod
         run: terraform apply -auto-approve tfplan
+        env:
+          TF_VAR_google_oauth_client_id: ${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}
+          TF_VAR_google_oauth_client_secret: ${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET }}
+          TF_VAR_facebook_app_id: ${{ secrets.FACEBOOK_APP_ID }}
+          TF_VAR_facebook_app_secret: ${{ secrets.FACEBOOK_APP_SECRET }}
+          TF_VAR_microsoft_client_id: ${{ secrets.MICROSOFT_CLIENT_ID }}
+          TF_VAR_microsoft_client_secret: ${{ secrets.MICROSOFT_CLIENT_SECRET }}
 
   build-and-deploy:
     name: Build and Deploy Lambda Functions

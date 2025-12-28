@@ -23,7 +23,8 @@ const services = ['whatsapp-bot', 'trip-planner', 'integrations', 'auth', 'autho
 
 async function buildAll() {
   for (const service of services) {
-    const entryFile = service === 'whatsapp-bot' ? 'webhook.ts' : 'index.ts';
+    // Use index.ts for all services
+    const entryFile = 'index.ts';
     
     console.log(`Building ${service}...`);
     

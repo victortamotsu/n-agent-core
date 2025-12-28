@@ -30,6 +30,14 @@ output "lambda_functions" {
       name = aws_lambda_function.integrations.function_name
       arn  = aws_lambda_function.integrations.arn
     }
+    auth = {
+      name = aws_lambda_function.auth.function_name
+      arn  = aws_lambda_function.auth.arn
+    }
+    authorizer = {
+      name = aws_lambda_function.authorizer.function_name
+      arn  = aws_lambda_function.authorizer.arn
+    }
   }
 }
 

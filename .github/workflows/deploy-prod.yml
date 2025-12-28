@@ -37,15 +37,13 @@ jobs:
 
       - name: Create placeholder ZIPs for Lambda
         run: |
-          mkdir -p services/whatsapp-bot services/trip-planner services/integrations services/auth services/authorizer services/action-groups services/ai-orchestrator
+          mkdir -p services/whatsapp-bot services/trip-planner services/integrations services/auth services/authorizer
           echo "placeholder" > placeholder.txt
           zip services/whatsapp-bot/whatsapp-bot.zip placeholder.txt
           zip services/trip-planner/trip-planner.zip placeholder.txt
           zip services/integrations/integrations.zip placeholder.txt
           zip services/auth/auth.zip placeholder.txt
           zip services/authorizer/authorizer.zip placeholder.txt
-          zip services/action-groups/action-groups.zip placeholder.txt
-          zip services/ai-orchestrator/ai-orchestrator.zip placeholder.txt
           rm placeholder.txt
 
       - name: Configure AWS credentials
@@ -160,18 +158,6 @@ jobs:
           aws lambda update-function-code \
             --function-name n-agent-authorizer-${{ env.ENVIRONMENT }} \
             --zip-file fileb://services/authorizer/authorizer.zip
-          
-          # Action Groups
-          cd services/action-groups/dist && zip -r ../action-groups.zip . && cd ../../..
-          aws lambda update-function-code \
-            --function-name n-agent-action-groups \
-            --zip-file fileb://services/action-groups/action-groups.zip
-          
-          # AI Orchestrator
-          cd services/ai-orchestrator/dist && zip -r ../ai-orchestrator.zip . && cd ../../..
-          aws lambda update-function-code \
-            --function-name n-agent-ai-orchestrator \
-            --zip-file fileb://services/ai-orchestrator/ai-orchestrator.zip
 
   deploy-frontend:
     name: Deploy Frontend to S3

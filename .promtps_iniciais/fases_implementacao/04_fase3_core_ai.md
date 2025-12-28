@@ -865,14 +865,84 @@ def handler(event, context):
 
 ### Passo 3.6: Arquitetura Multi-Agente com Router
 
+## 🧠 Como Funciona o Roteamento Multi-Agente
+
+### Conceito
+
+O **Router Agent** é um agente especializado que analisa cada mensagem do usuário e decide qual modelo de IA deve processá-la. É como um "triagem" que encaminha o paciente (mensagem) para o médico (modelo) certo.
+
+### Fluxo Completo de uma Mensagem
+
+```mermaid
+sequenceDiagram
+    participant User as 👤 Usuário
+    participant WA as WhatsApp
+    participant Router as 🔀 Router Agent<br/>(Nova Micro)
+    participant Chat as 💬 Chat Agent<br/>(Nova Lite)
+    participant Plan as 🧠 Planning Agent<br/>(Nova Pro)
+    participant Vision as 👁️ Vision Agent<br/>(Claude Sonnet)
+    
+    User->>WA: "Oi! Tudo bem?"
+    WA->>Router: Classifica mensagem
+    Router->>Router: Análise: TRIVIAL
+    Router->>Chat: Encaminha (sem memória)
+    Chat-->>User: "Olá! Tudo ótimo, e você?"
+    
+    Note over Router: Custo: $0.000035 (Router) + $0.00006 (Chat) = $0.000095
+    
+    User->>WA: "Qual meu hotel em Roma?"
+    WA->>Router: Classifica mensagem
+    Router->>Router: Análise: INFORMATIVE
+    Router->>Chat: Encaminha (com memória)
+    Chat->>Chat: Busca em AgentCore Memory
+    Chat-->>User: "Seu hotel é o Monti Palace..."
+    
+    Note over Router: Custo: $0.000035 + $0.00006 = $0.000095
+    
+    User->>WA: "Planeje 3 dias em Roma"
+    WA->>Router: Classifica mensagem
+    Router->>Router: Análise: COMPLEX
+    Router->>Plan: Encaminha (com tools)
+    Plan->>Plan: Usa Google Maps, Booking, etc.
+    Plan-->>User: "📋 Roteiro criado!..."
+    
+    Note over Router: Custo: $0.000035 + $0.0008 = $0.000835
+    
+    User->>WA: [Imagem de passaporte]
+    WA->>Router: Detecta imagem
+    Router->>Router: has_image=True
+    Router->>Vision: Encaminha
+    Vision->>Vision: OCR + Análise
+    Vision-->>User: "Passaporte válido até 2030..."
+    
+    Note over Router: Custo: $0.000035 + $0.003 = $0.003035
+```
+
+### Quem Avalia?
+
+**Router Agent (Nova Micro - $0.035/1M tokens)**
+
+É um modelo **ultra-rápido e barato** que executa uma análise simples da mensagem em ~100-200ms. Ele não precisa entender profundamente o contexto, apenas classificar em categorias.
+
+**Por que Nova Micro?**
+- ⚡ **Latência**: ~100-200ms (vs 500-1000ms de modelos maiores)
+- 💰 **Custo**: 10-100x mais barato que usar Nova Pro diretamente
+- 🎯 **Precisão**: 95%+ para classificação simples (suficiente)
+
+### Implementação Detalhada
+
 **agent/src/router/agent_router.py**:
 
 ```python
 import boto3
+import json
+import re
 from enum import Enum
-from typing import Dict, Any
+from typing import Dict, Any, Optional
+from datetime import datetime
 
 class QueryComplexity(Enum):
+    """Tipos de complexidade de queries."""
     TRIVIAL = "trivial"          # "Oi", "Ok", "Obrigado" → Nova Lite
     INFORMATIVE = "informative"  # "Qual meu hotel?" → Nova Lite + Memory
     COMPLEX = "complex"          # "Planeje 3 dias em Roma" → Nova Pro + Tools
@@ -885,47 +955,123 @@ class AgentRouter:
     def __init__(self):
         self.bedrock = boto3.client('bedrock-runtime', region_name='us-east-1')
         
-        # Configuração de modelos
+        # Configuração de modelos (custos por 1M tokens)
         self.models = {
-            'router': 'us.amazon.nova-micro-v1:0',
-            'chat': 'us.amazon.nova-lite-v1:0',
-            'planning': 'us.amazon.nova-pro-v1:0',
-            'vision': 'anthropic.claude-3-sonnet-20240229-v1:0'
+            'router': {
+                'id': 'us.amazon.nova-micro-v1:0',
+                'cost_input': 0.035,   # $0.035/1M
+                'cost_output': 0.14    # $0.14/1M
+            },
+            'chat': {
+                'id': 'us.amazon.nova-lite-v1:0',
+                'cost_input': 0.06,    # $0.06/1M
+                'cost_output': 0.24    # $0.24/1M
+            },
+            'planning': {
+                'id': 'us.amazon.nova-pro-v1:0',
+                'cost_input': 0.80,    # $0.80/1M
+                'cost_output': 3.20    # $3.20/1M
+            },
+            'vision': {
+                'id': 'anthropic.claude-3-sonnet-20240229-v1:0',
+                'cost_input': 3.00,    # $3.00/1M
+                'cost_output': 0       # Não usado (vision apenas lê)
+            }
         }
+        
+        # Padrões para classificação rápida (antes de chamar Router)
+        self.trivial_patterns = [
+            r'^(oi|olá|hey|hi|hello)[\s!?]*$',
+            r'^(obrigad[oa]|thanks|valeu)[\s!?]*$',
+            r'^(ok|certo|tudo bem|sim|não|yes|no)[\s!?]*$',
+            r'^👍|👋|😊|❤️$',  # Apenas emojis
+        ]
     
-    def classify_query(self, user_message: str, has_image: bool = False) -> QueryComplexity:
+    def is_trivial_pattern(self, message: str) -> bool:
+        """Verifica se mensagem é trivial sem chamar Router (economia)."""
+        message_lower = message.lower().strip()
+        
+        # Mensagens muito curtas (<= 3 palavras) geralmente são triviais
+        if len(message_lower.split()) <= 3:
+            for pattern in self.trivial_patterns:
+                if re.match(pattern, message_lower, re.IGNORECASE):
+                    return True
+        return False
+    
+    def classify_query(self, user_message: str, has_image: bool = False, trip_context: Optional[Dict] = None) -> QueryComplexity:
         """Usa Nova Micro para classificar complexidade da query."""
         
+        # 1. Detecção rápida: imagem = visão
         if has_image:
             return QueryComplexity.VISION
         
-        # Query classificadora (Router Agent)
-        prompt = f"""
-Classifique a complexidade desta mensagem do usuário:
-
-"{user_message}"
-
-Responda apenas com UMA palavra:
-- TRIVIAL: saudações, agradecimentos, confirmações simples
-- INFORMATIVE: perguntas sobre informações já coletadas
-- COMPLEX: solicitações de planejamento, busca de informações novas
-- CRITICAL: solicitações envolvendo contratos, documentos legais
-"""
+        # 2. Detecção rápida: padrões triviais (economiza chamada ao Router)
+        if self.is_trivial_pattern(user_message):
+            return QueryComplexity.TRIVIAL
+        
+        # 3. Usar Router Agent para classificação inteligente
+        prompt = self._build_classification_prompt(user_message, trip_context)
         
         response = self.bedrock.invoke_model(
-            modelId=self.models['router'],
-            body={
+            modelId=self.models['router']['id'],
+            body=json.dumps({
                 'messages': [{'role': 'user', 'content': prompt}],
                 'max_tokens': 10,
-                'temperature': 0.1
-            }
+                'temperature': 0.1,  # Baixa temperatura = mais determinístico
+                'top_p': 0.9
+            })
         )
         
-        classification = response['output']['message']['content'][0]['text'].strip().upper()
-        return QueryComplexity(classification.lower())
+        response_body = json.loads(response['body'].read())
+        classification = response_body['content'][0]['text'].strip().upper()
+        
+        # Parse da classificação
+        try:
+            return QueryComplexity(classification.lower())
+        except ValueError:
+            # Fallback se classificação inválida
+            print(f"⚠️ Classificação inválida: {classification}, usando INFORMATIVE")
+            return QueryComplexity.INFORMATIVE
     
-    def get_model_for_complexity(self, complexity: QueryComplexity) -> str:
-        """Retorna o modelo adequado para a complexidade."""
+    def _build_classification_prompt(self, user_message: str, trip_context: Optional[Dict]) -> str:
+        """Constrói prompt de classificação com exemplos."""
+        
+        # Adiciona contexto da viagem se disponível
+        context_info = ""
+        if trip_context:
+            context_info = f"""
+CONTEXTO DA VIAGEM:
+- Status: {trip_context.get('status', 'KNOWLEDGE')}
+- Destinos: {', '.join(trip_context.get('destinations', []))}
+- Datas: {trip_context.get('start_date')} → {trip_context.get('end_date')}
+"""
+        
+        return f"""
+Você é um classificador de mensagens de usuários em um assistente de viagens.
+
+{context_info}
+
+MENSAGEM DO USUÁRIO:
+"{user_message}"
+
+Classifique a complexidade respondendo APENAS UMA das palavras abaixo:
+
+TRIVIAL → Saudações, agradecimentos, confirmações simples ("Oi", "Ok", "Obrigado")
+INFORMATIVE → Perguntas sobre informações já coletadas ("Qual meu hotel?", "A que horas é o voo?")
+COMPLEX → Solicitações de planejamento ou busca de novas informações ("Planeje 3 dias em Roma", "Busque hotéis perto do Coliseu")
+CRITICAL → Solicitações envolvendo documentos importantes ou decisões críticas ("Revise meu contrato de seguro", "Valide minha reserva de voo")
+
+EXEMPLOS:
+- "Bom dia!" → TRIVIAL
+- "Qual o nome do hotel em Paris?" → INFORMATIVE
+- "Quero visitar o Louvre amanhã, me ajuda?" → COMPLEX
+- "Preciso cancelar minha reserva urgente" → CRITICAL
+
+CLASSIFICAÇÃO (responda apenas UMA palavra):
+"""
+    
+    def get_model_for_complexity(self, complexity: QueryComplexity) -> Dict[str, Any]:
+        """Retorna configuração do modelo adequado para a complexidade."""
         mapping = {
             QueryComplexity.TRIVIAL: self.models['chat'],
             QueryComplexity.INFORMATIVE: self.models['chat'],
@@ -935,41 +1081,217 @@ Responda apenas com UMA palavra:
         }
         return mapping[complexity]
     
-    def route(self, user_message: str, has_image: bool = False) -> Dict[str, Any]:
-        """Classifica e retorna configuração para o agente."""
-        complexity = self.classify_query(user_message, has_image)
-        model_id = self.get_model_for_complexity(complexity)
+    def route(self, user_message: str, has_image: bool = False, trip_context: Optional[Dict] = None) -> Dict[str, Any]:
+        """Classifica e retorna configuração completa para o agente."""
         
-        # Configurações específicas
+        start_time = datetime.now()
+        
+        # 1. Classificar query
+        complexity = self.classify_query(user_message, has_image, trip_context)
+        
+        # 2. Selecionar modelo
+        model_config = self.get_model_for_complexity(complexity)
+        
+        # 3. Configurações específicas do agente
         config = {
-            'model_id': model_id,
+            'model_id': model_config['id'],
             'complexity': complexity.value,
             'use_tools': complexity in [QueryComplexity.COMPLEX, QueryComplexity.CRITICAL],
             'use_memory': complexity != QueryComplexity.TRIVIAL,
-            'enable_cache': True  # Prompt caching habilitado
+            'enable_cache': True,  # Prompt caching habilitado
+            'cost_input_per_1m': model_config['cost_input'],
+            'cost_output_per_1m': model_config['cost_output'],
+            'routing_time_ms': int((datetime.now() - start_time).total_seconds() * 1000)
         }
+        
+        # 4. Log de roteamento (para métricas)
+        print(f"🔀 Router: '{user_message[:50]}...' → {complexity.value} ({model_config['id']}) em {config['routing_time_ms']}ms")
         
         return config
 
-# Uso no entrypoint
+# Uso no entrypoint principal
 router = AgentRouter()
 
-def handle_message(user_message: str, context: Dict[str, Any]):
+def handle_message(user_message: str, has_image: bool = False, trip_context: Optional[Dict] = None) -> str:
     """Handler principal que usa o router."""
     
-    # 1. Classificar query
-    routing_config = router.route(user_message)
+    # 1. Rotear mensagem
+    routing_config = router.route(user_message, has_image, trip_context)
     
-    # 2. Selecionar agente
-    if routing_config['complexity'] == 'trivial':
-        return chat_agent(user_message, use_memory=False)
-    elif routing_config['complexity'] == 'informative':
-        return chat_agent(user_message, use_memory=True)
-    elif routing_config['complexity'] == 'complex':
-        return planning_agent(user_message, use_tools=True)
-    elif routing_config['complexity'] in ['vision', 'critical']:
-        return vision_agent(user_message)
+    # 2. Selecionar e executar agente apropriado
+    complexity = routing_config['complexity']
+    
+    if complexity == 'trivial':
+        # Chat simples, sem memória
+        return chat_agent(
+            message=user_message,
+            model_id=routing_config['model_id'],
+            use_memory=False,
+            use_cache=True
+        )
+    
+    elif complexity == 'informative':
+        # Chat com memória
+        return chat_agent(
+            message=user_message,
+            model_id=routing_config['model_id'],
+            use_memory=True,
+            use_cache=True
+        )
+    
+    elif complexity == 'complex':
+        # Planning com ferramentas
+        return planning_agent(
+            message=user_message,
+            model_id=routing_config['model_id'],
+            use_tools=True,
+            use_memory=True,
+            use_cache=True,
+            trip_context=trip_context
+        )
+    
+    elif complexity in ['vision', 'critical']:
+        # Vision/Critical com Claude
+        return vision_agent(
+            message=user_message,
+            model_id=routing_config['model_id'],
+            has_image=has_image,
+            use_memory=True
+        )
+
+
+# Exemplo de uso dos agentes especializados
+
+def chat_agent(message: str, model_id: str, use_memory: bool, use_cache: bool) -> str:
+    """Agente de chat simples (Nova Lite)."""
+    bedrock = boto3.client('bedrock-runtime')
+    
+    system_prompt = "Você é o n-agent, assistente de viagens amigável."
+    
+    # Buscar contexto da memória se necessário
+    context = ""
+    if use_memory:
+        memory = get_memory_context()  # Implementado em memory_manager.py
+        context = f"\n\nCONTEXTO DA CONVERSA:\n{memory}"
+    
+    response = bedrock.invoke_model(
+        modelId=model_id,
+        body=json.dumps({
+            'messages': [
+                {'role': 'system', 'content': system_prompt + context},  # Cached
+                {'role': 'user', 'content': message}
+            ],
+            'max_tokens': 500,
+            'temperature': 0.7
+        })
+    )
+    
+    return json.loads(response['body'].read())['content'][0]['text']
+
+
+def planning_agent(message: str, model_id: str, use_tools: bool, use_memory: bool, use_cache: bool, trip_context: Dict) -> str:
+    """Agente de planejamento complexo (Nova Pro)."""
+    bedrock = boto3.client('bedrock-runtime')
+    
+    system_prompt = """
+Você é o n-agent na fase de PLANEJAMENTO.
+
+FERRAMENTAS DISPONÍVEIS:
+- search_hotels(city, checkin, checkout, guests)
+- search_flights(origin, destination, date, passengers)
+- get_directions(origin, destination)
+- create_itinerary(days, activities)
+"""
+    
+    # Buscar contexto completo
+    context = ""
+    if use_memory:
+        memory = get_memory_context()
+        context = f"\n\nCONTEXTO:\n{memory}\n\nVIAGEM:\n{json.dumps(trip_context, indent=2)}"
+    
+    # Invocar com ferramentas (AgentCore Gateway)
+    response = bedrock.invoke_agent(
+        agentId='your-agent-id',
+        sessionId=trip_context.get('session_id'),
+        inputText=message,
+        enableTrace=True
+    )
+    
+    return response['completion']
+
+
+def vision_agent(message: str, model_id: str, has_image: bool, use_memory: bool) -> str:
+    """Agente de visão (Claude Sonnet)."""
+    bedrock = boto3.client('bedrock-runtime')
+    
+    # Processar imagem se presente
+    image_content = []
+    if has_image:
+        # Buscar imagem do S3 ou base64
+        image_data = get_image_from_message()  # Implementado em whatsapp_handler.py
+        image_content = [{
+            'type': 'image',
+            'source': {
+                'type': 'base64',
+                'media_type': 'image/jpeg',
+                'data': image_data
+            }
+        }]
+    
+    response = bedrock.invoke_model(
+        modelId=model_id,
+        body=json.dumps({
+            'messages': [{
+                'role': 'user',
+                'content': image_content + [{'type': 'text', 'text': message}]
+            }],
+            'max_tokens': 1000,
+            'temperature': 0.3  # Baixa temperatura para análise precisa
+        })
+    )
+    
+    return json.loads(response['body'].read())['content'][0]['text']
 ```
+
+### Exemplos Práticos de Roteamento
+
+| Mensagem do Usuário | Classificação | Modelo Usado | Custo Estimado | Latência | Uso de Tools/Memory |
+|---------------------|---------------|--------------|----------------|----------|---------------------|
+| "Oi!" | TRIVIAL | Nova Lite | $0.000095 | ~200ms | ❌ / ❌ |
+| "Obrigado!" | TRIVIAL | Nova Lite | $0.000095 | ~200ms | ❌ / ❌ |
+| "Qual meu hotel em Roma?" | INFORMATIVE | Nova Lite | $0.000095 | ~300ms | ❌ / ✅ |
+| "A que horas é o voo?" | INFORMATIVE | Nova Lite | $0.000095 | ~300ms | ❌ / ✅ |
+| "Planeje 3 dias em Roma" | COMPLEX | Nova Pro | $0.000835 | ~2s | ✅ / ✅ |
+| "Busque hotéis perto do Coliseu" | COMPLEX | Nova Pro | $0.000835 | ~3s | ✅ / ✅ |
+| [Foto do passaporte] | VISION | Claude Sonnet | $0.003035 | ~4s | ❌ / ✅ |
+| "Valide minha reserva de voo" | CRITICAL | Claude Sonnet | $0.003035 | ~3s | ✅ / ✅ |
+
+### Métricas de Economia
+
+**Sem Router (usando apenas Nova Pro para tudo):**
+- 8000 mensagens/mês × $0.0008 (média) = **$6.40/mês**
+
+**Com Router:**
+- 60% TRIVIAL (4800 msgs) × $0.000095 = $0.456
+- 25% INFORMATIVE (2000 msgs) × $0.000095 = $0.190
+- 10% COMPLEX (800 msgs) × $0.000835 = $0.668
+- 3% VISION (240 msgs) × $0.003035 = $0.728
+- 2% CRITICAL (160 msgs) × $0.003035 = $0.486
+- **Total: $2.53/mês**
+
+**Economia: 60%** ($6.40 → $2.53)
+
+Com **Prompt Caching (70% hit rate):**
+- Total com cache: **$1.52/mês**
+- **Economia total: 76%** ($6.40 → $1.52)
+
+### Vantagens do Sistema
+
+1. **Custo-Eficiência**: Paga caro apenas quando necessário
+2. **Latência Otimizada**: Queries simples respondem em ~200ms
+3. **Escalabilidade**: Router suporta milhões de classificações por centavos
+4. **Flexibilidade**: Fácil adicionar novos tipos de complexidade
+5. **Métricas**: Log detalhado de roteamento para análise
 
 ### Passo 3.7: Configurar Prompt Caching
 

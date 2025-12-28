@@ -70,7 +70,7 @@ resource "aws_iam_role_policy" "bedrock_agent_permissions" {
 resource "aws_bedrockagent_agent" "n_agent" {
   agent_name                  = var.project_name
   agent_resource_role_arn     = aws_iam_role.bedrock_agent_role.arn
-  foundation_model            = "anthropic.claude-3-haiku-20240307-v1:0"
+  foundation_model            = "anthropic.claude-3-5-sonnet-20241022-v2:0"
   idle_session_ttl_in_seconds = 600
   description                 = "Assistente pessoal de planejamento de viagens"
 

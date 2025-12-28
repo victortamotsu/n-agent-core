@@ -2,12 +2,68 @@ import { createLogger } from '@n-agent/logger';
 import { NormalizedMessage } from './types.js';
 import { WhatsAppClient } from './client.js';
 import { getMessageText } from './normalizer.js';
+import { LambdaClient, InvokeCommand } from '@aws-sdk/client-lambda';
 
 const logger = createLogger('bot-handler');
 
+// Config para AI Orchestrator
+const USE_AI_ORCHESTRATOR = process.env.USE_AI_ORCHESTRATOR === 'true';
+const AI_ORCHESTRATOR_FUNCTION = process.env.AI_ORCHESTRATOR_FUNCTION || 'n-agent-ai-orchestrator';
+
+const lambdaClient = new LambdaClient({ region: process.env.AWS_REGION || 'us-east-1' });
+
 /**
- * Simple response handler for MVP
- * In the future, this will be replaced by Bedrock Agent
+ * Invoca o AI Orchestrator via Lambda
+ */
+async function invokeAIOrchestrator(
+  userId: string,
+  message: string,
+  sessionId?: string
+): Promise<{ response: string; sessionId: string } | null> {
+  try {
+    const payload = {
+      userId,
+      message,
+      sessionId,
+      platform: 'whatsapp',
+      metadata: {
+        timestamp: new Date().toISOString(),
+      },
+    };
+
+    logger.info('Invoking AI Orchestrator', { userId, messageLength: message.length });
+
+    const command = new InvokeCommand({
+      FunctionName: AI_ORCHESTRATOR_FUNCTION,
+      Payload: Buffer.from(JSON.stringify({ body: JSON.stringify(payload) })),
+    });
+
+    const result = await lambdaClient.send(command);
+    
+    if (result.Payload) {
+      const responseStr = Buffer.from(result.Payload).toString();
+      const response = JSON.parse(responseStr);
+      
+      if (response.statusCode === 200) {
+        const body = JSON.parse(response.body);
+        return {
+          response: body.response,
+          sessionId: body.sessionId,
+        };
+      }
+    }
+
+    logger.warn('AI Orchestrator returned non-200', { result });
+    return null;
+  } catch (error) {
+    logger.error('Error invoking AI Orchestrator', { error });
+    return null;
+  }
+}
+
+/**
+ * Main message handler
+ * Routes to AI Orchestrator when enabled, falls back to rule-based responses
  */
 export async function handleMessage(
   message: NormalizedMessage,
@@ -18,9 +74,42 @@ export async function handleMessage(
   logger.info('Processing message', { 
     from: message.from, 
     type: message.type,
-    text: text.substring(0, 100) 
+    text: text.substring(0, 100),
+    useAI: USE_AI_ORCHESTRATOR,
   });
 
+  // Try AI Orchestrator first if enabled
+  if (USE_AI_ORCHESTRATOR && message.type === 'text') {
+    const aiResult = await invokeAIOrchestrator(
+      message.from,
+      getMessageText(message)
+    );
+
+    if (aiResult) {
+      // Envia resposta do AI
+      return await client.sendText({
+        to: message.from,
+        text: aiResult.response,
+        replyTo: message.messageId,
+      });
+    }
+    
+    // Fallback se AI falhou
+    logger.warn('AI Orchestrator failed, using fallback');
+  }
+
+  // Fallback: rule-based responses
+  return await handleMessageFallback(message, client, text);
+}
+
+/**
+ * Rule-based fallback handler (MVP behavior)
+ */
+async function handleMessageFallback(
+  message: NormalizedMessage,
+  client: WhatsAppClient,
+  text: string
+): Promise<string> {
   // Greeting responses
   if (isGreeting(text)) {
     return await sendGreetingResponse(message, client);

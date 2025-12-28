@@ -77,3 +77,6 @@ export interface IChatMessage {
   metadata?: Record<string, unknown>;
   timestamp: string;
 }
+
+// Re-export AI types from dedicated module
+export * from './ai.js';

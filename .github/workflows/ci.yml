@@ -75,6 +75,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: [lint, test]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    timeout-minutes: 30  # OpenSearch provisioning can take 15-20 min
     
     steps:
     - uses: actions/checkout@v4
@@ -83,6 +84,11 @@ jobs:
       uses: hashicorp/setup-terraform@v3
       with:
         terraform_version: 1.6.0
+    
+    - name: Set up Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
     
     - name: Set up Python
       uses: actions/setup-python@v5
@@ -98,6 +104,12 @@ jobs:
       run: |
         cd agent
         uv sync
+    
+    - name: Build Lambda WhatsApp
+      run: |
+        cd lambdas/whatsapp-webhook
+        npm install
+        npm run build
     
     - name: Configure AWS credentials
       uses: aws-actions/configure-aws-credentials@v4

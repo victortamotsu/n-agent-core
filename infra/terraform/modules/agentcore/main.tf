@@ -10,7 +10,13 @@ data "archive_file" "agent_code" {
   output_path = "${path.module}/agent-code.zip"
 }
 
-# Create Bedrock Agent Memory
+# ⚠️ COST WARNING: OpenSearch Serverless = $345.60/month minimum (2 OCUs)
+# For POC/Fase 0-1: Consider commenting out OpenSearch resources below
+# Agents work perfectly without Memory - just lose context between sessions
+# Uncomment when you have 10+ paying customers to justify cost
+# Alternative: Implement custom DynamoDB-based memory storage (~$5/month)
+
+# Create Bedrock Agent Memory (EXPENSIVE - READ WARNING ABOVE)
 resource "aws_bedrockagent_knowledge_base" "memory" {
   name        = "${var.project_name}-${var.environment}-memory"
   description = "Memory for ${var.project_name} agent"

@@ -170,14 +170,14 @@ resource "aws_iam_role_policy_attachment" "action_groups_logs" {
 # -----------------------------------------------------------------------------
 # Lambda Permission para Bedrock invocar Action Groups
 # -----------------------------------------------------------------------------
-# TODO: Precisa ajustar ordem de deploy - Lambda precisa existir antes da permissão
-# resource "aws_lambda_permission" "bedrock_action_groups" {
-#   statement_id  = "AllowBedrockInvoke"
-#   action        = "lambda:InvokeFunction"
-#   function_name = "${var.project_name}-ai-orchestrator"
-#   principal     = "bedrock.amazonaws.com"
-#   source_arn    = aws_bedrockagent_agent.n_agent.agent_arn
-# }
+
+resource "aws_lambda_permission" "bedrock_action_groups" {
+  statement_id  = "AllowBedrockInvoke"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.action_groups.function_name
+  principal     = "bedrock.amazonaws.com"
+  source_arn    = aws_bedrockagent_agent.n_agent.agent_arn
+}
 
 # -----------------------------------------------------------------------------
 # IAM Role para Lambda do Orchestrator
@@ -270,8 +270,8 @@ resource "aws_bedrockagent_agent_action_group" "trip_management" {
   }
 
   depends_on = [
-    aws_bedrockagent_agent.n_agent
-    # aws_lambda_permission.bedrock_action_groups  # Descomentar quando Lambda existir
+    aws_bedrockagent_agent.n_agent,
+    aws_lambda_permission.bedrock_action_groups
   ]
 }
 

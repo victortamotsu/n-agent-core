@@ -9,6 +9,8 @@
     "clean": "rm -rf dist node_modules .turbo"
   },
   "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.490.0",
+    "@aws-sdk/lib-dynamodb": "^3.490.0",
     "@n-agent/core-types": "workspace:*",
     "@n-agent/logger": "workspace:*"
   },

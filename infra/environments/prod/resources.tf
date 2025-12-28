@@ -399,9 +399,11 @@ resource "aws_lambda_function" "whatsapp_bot" {
 
   environment {
     variables = {
-      DYNAMODB_TABLE_CORE = aws_dynamodb_table.n_agent_core.name
-      DYNAMODB_TABLE_CHAT = aws_dynamodb_table.n_agent_chat.name
-      ENVIRONMENT         = var.environment
+      DYNAMODB_TABLE          = aws_dynamodb_table.n_agent_core.name
+      ENVIRONMENT             = var.environment
+      WHATSAPP_ACCESS_TOKEN   = var.whatsapp_access_token
+      WHATSAPP_PHONE_NUMBER_ID = var.whatsapp_phone_number_id
+      WEBHOOK_VERIFY_TOKEN    = var.whatsapp_verify_token
     }
   }
 

@@ -60,6 +60,9 @@ jobs:
           TF_VAR_facebook_app_secret: ${{ secrets.FACEBOOK_APP_SECRET }}
           TF_VAR_microsoft_client_id: ${{ secrets.MICROSOFT_CLIENT_ID }}
           TF_VAR_microsoft_client_secret: ${{ secrets.MICROSOFT_CLIENT_SECRET }}
+          TF_VAR_whatsapp_access_token: ${{ secrets.WHATSAPP_ACCESS_TOKEN }}
+          TF_VAR_whatsapp_phone_number_id: ${{ secrets.WHATSAPP_PHONE_NUMBER_ID }}
+          TF_VAR_whatsapp_verify_token: ${{ secrets.WHATSAPP_VERIFY_TOKEN }}
 
       - name: Terraform Apply
         working-directory: ./infra/environments/prod
@@ -71,6 +74,9 @@ jobs:
           TF_VAR_facebook_app_secret: ${{ secrets.FACEBOOK_APP_SECRET }}
           TF_VAR_microsoft_client_id: ${{ secrets.MICROSOFT_CLIENT_ID }}
           TF_VAR_microsoft_client_secret: ${{ secrets.MICROSOFT_CLIENT_SECRET }}
+          TF_VAR_whatsapp_access_token: ${{ secrets.WHATSAPP_ACCESS_TOKEN }}
+          TF_VAR_whatsapp_phone_number_id: ${{ secrets.WHATSAPP_PHONE_NUMBER_ID }}
+          TF_VAR_whatsapp_verify_token: ${{ secrets.WHATSAPP_VERIFY_TOKEN }}
 
   build-and-deploy:
     name: Build and Deploy Lambda Functions

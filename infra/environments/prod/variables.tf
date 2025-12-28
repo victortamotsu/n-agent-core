@@ -51,3 +51,24 @@ variable "microsoft_client_secret" {
   type        = string
   sensitive   = true
 }
+
+# WhatsApp Cloud API Credentials
+variable "whatsapp_access_token" {
+  description = "WhatsApp Cloud API permanent access token"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "whatsapp_phone_number_id" {
+  description = "WhatsApp Business Phone Number ID"
+  type        = string
+  default     = ""
+}
+
+variable "whatsapp_verify_token" {
+  description = "Custom token to verify webhook from Meta"
+  type        = string
+  sensitive   = true
+  default     = ""
+}

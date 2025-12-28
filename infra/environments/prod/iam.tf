@@ -32,10 +32,10 @@ resource "aws_iam_role_policy" "whatsapp_bot" {
         Action = [
           "dynamodb:PutItem",
           "dynamodb:GetItem",
-          "dynamodb:Query"
+          "dynamodb:Query",
+          "dynamodb:UpdateItem"
         ]
         Resource = [
-          aws_dynamodb_table.n_agent_chat.arn,
           aws_dynamodb_table.n_agent_core.arn,
           "${aws_dynamodb_table.n_agent_core.arn}/index/*"
         ]

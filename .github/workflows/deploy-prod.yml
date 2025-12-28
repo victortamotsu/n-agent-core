@@ -37,13 +37,15 @@ jobs:
 
       - name: Create placeholder ZIPs for Lambda
         run: |
-          mkdir -p services/whatsapp-bot services/trip-planner services/integrations services/auth services/authorizer
+          mkdir -p services/whatsapp-bot services/trip-planner services/integrations services/auth services/authorizer services/action-groups services/ai-orchestrator
           echo "placeholder" > placeholder.txt
           zip services/whatsapp-bot/whatsapp-bot.zip placeholder.txt
           zip services/trip-planner/trip-planner.zip placeholder.txt
           zip services/integrations/integrations.zip placeholder.txt
           zip services/auth/auth.zip placeholder.txt
           zip services/authorizer/authorizer.zip placeholder.txt
+          zip services/action-groups/action-groups.zip placeholder.txt
+          zip services/ai-orchestrator/ai-orchestrator.zip placeholder.txt
           rm placeholder.txt
 
       - name: Configure AWS credentials

@@ -46,6 +46,11 @@ resource "aws_dynamodb_table" "n_agent_core" {
   }
 }
 
+# SES Email Identity
+resource "aws_ses_email_identity" "noreply" {
+  email = "noreply@n-agent.com"
+}
+
 # Cognito User Pool
 resource "aws_cognito_user_pool" "main" {
   name = "${var.project_name}-users-${var.environment}"
@@ -95,9 +100,11 @@ resource "aws_cognito_user_pool" "main" {
   # Auto-verificação de email
   auto_verified_attributes = ["email"]
 
-  # Configurações de email
+  # Configurações de email com SES
   email_configuration {
-    email_sending_account = "COGNITO_DEFAULT"
+    email_sending_account = "DEVELOPER"
+    source_arn            = aws_ses_email_identity.noreply.arn
+    from_email_address    = "n-agent <noreply@n-agent.com>"
   }
 
   # Mensagens de verificação
@@ -122,6 +129,71 @@ resource "aws_cognito_user_pool" "main" {
 
   tags = {
     Name = "n-agent-user-pool"
+  }
+}
+
+# Cognito Domain
+resource "aws_cognito_user_pool_domain" "main" {
+  domain       = "${var.project_name}-${var.environment}"
+  user_pool_id = aws_cognito_user_pool.main.id
+}
+
+# Google Identity Provider
+resource "aws_cognito_identity_provider" "google" {
+  user_pool_id  = aws_cognito_user_pool.main.id
+  provider_name = "Google"
+  provider_type = "Google"
+
+  provider_details = {
+    client_id        = var.google_oauth_client_id
+    client_secret    = var.google_oauth_client_secret
+    authorize_scopes = "openid email profile"
+  }
+
+  attribute_mapping = {
+    email    = "email"
+    name     = "name"
+    username = "sub"
+  }
+}
+
+# Facebook Identity Provider
+resource "aws_cognito_identity_provider" "facebook" {
+  user_pool_id  = aws_cognito_user_pool.main.id
+  provider_name = "Facebook"
+  provider_type = "Facebook"
+
+  provider_details = {
+    client_id        = var.facebook_app_id
+    client_secret    = var.facebook_app_secret
+    authorize_scopes = "public_profile,email"
+  }
+
+  attribute_mapping = {
+    email    = "email"
+    name     = "name"
+    username = "id"
+  }
+}
+
+# Microsoft Identity Provider
+resource "aws_cognito_identity_provider" "microsoft" {
+  user_pool_id  = aws_cognito_user_pool.main.id
+  provider_name = "Microsoft"
+  provider_type = "OIDC"
+
+  provider_details = {
+    client_id          = var.microsoft_client_id
+    client_secret      = var.microsoft_client_secret
+    authorize_scopes   = "openid email profile"
+    attributes_request_method = "GET"
+    oidc_issuer        = "https://login.microsoftonline.com/common/v2.0"
+  }
+
+  attribute_mapping = {
+    email    = "email"
+    name     = "name"
+    username = "sub"
   }
 }
 
@@ -154,7 +226,7 @@ resource "aws_cognito_user_pool_client" "web_client" {
   allowed_oauth_scopes                 = ["email", "openid", "profile"]
   callback_urls                        = ["http://localhost:3000/callback", "https://n-agent.com/callback"]
   logout_urls                          = ["http://localhost:3000", "https://n-agent.com"]
-  supported_identity_providers         = ["COGNITO"]
+  supported_identity_providers         = ["COGNITO", "Google", "Facebook", "Microsoft"]
 
   # Configurações de leitura/escrita de atributos
   read_attributes = [
@@ -173,6 +245,13 @@ resource "aws_cognito_user_pool_client" "web_client" {
 
   # Previne destruição acidental
   prevent_user_existence_errors = "ENABLED"
+
+  # Depende dos Identity Providers estarem criados
+  depends_on = [
+    aws_cognito_identity_provider.google,
+    aws_cognito_identity_provider.facebook,
+    aws_cognito_identity_provider.microsoft
+  ]
 }
 
 resource "aws_dynamodb_table" "n_agent_chat" {

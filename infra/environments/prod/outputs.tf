@@ -53,7 +53,8 @@ output "cognito" {
     user_pool_arn       = aws_cognito_user_pool.main.arn
     user_pool_endpoint  = aws_cognito_user_pool.main.endpoint
     client_id           = aws_cognito_user_pool_client.web_client.id
-    domain              = aws_cognito_user_pool.main.domain
+    domain              = aws_cognito_user_pool_domain.main.domain
+    hosted_ui_url       = "https://${aws_cognito_user_pool_domain.main.domain}.auth.${var.aws_region}.amazoncognito.com"
   }
   sensitive = true
 }

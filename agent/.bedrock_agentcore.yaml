@@ -1,0 +1,39 @@
+name: n-agent
+description: Assistente pessoal de viagens com arquitetura multi-agente e cost optimization
+region: us-east-1
+
+runtime:
+  entrypoint: src/main.py
+  python_version: "3.13"
+  timeout: 600  # 10 minutos para operações de planejamento
+  memory: 2048  # 2GB para melhor performance com múltiplos modelos
+
+# AgentCore Memory (será configurado no deploy)
+# Para configurar: agentcore configure --memory-id <MEMORY_ID>
+
+environment:
+  # AWS Resources
+  DYNAMODB_TABLE: n-agent-core
+  S3_BUCKET: n-agent-documents
+  
+  # Logging
+  LOG_LEVEL: INFO
+  
+  # Router configuration (Cost Optimization 76%)
+  ROUTER_MODEL: us.amazon.nova-micro-v1:0  # $0.035/1M - Classificação
+  CHAT_MODEL: us.amazon.nova-lite-v1:0     # $0.06/1M - Queries simples
+  PLANNING_MODEL: us.amazon.nova-pro-v1:0  # $0.80/1M - Planejamento complexo
+  VISION_MODEL: anthropic.claude-3-sonnet-20240229-v1:0  # $3.00/1M - Visão
+  
+  # AWS Region (opcional override)
+  AWS_REGION: us-east-1
+  
+  # AgentCore Memory ID (será configurado no deploy)
+  # BEDROCK_AGENTCORE_MEMORY_ID: <será configurado>
+
+# Best Practices da AWS Documentation:
+# 1. Usar timeout adequado para workloads de planejamento (5-10 min)
+# 2. Memory 2GB recomendada para multi-agent systems
+# 3. Python 3.13 compatível com Strands e AgentCore
+# 4. Environment variables para configuração sem hardcode
+

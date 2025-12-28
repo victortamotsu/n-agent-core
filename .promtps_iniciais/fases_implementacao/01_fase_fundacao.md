@@ -3,12 +3,12 @@
 ## Semana 1: Contas e Acessos
 
 ### Tarefas Manuais
-- [ ] Criar conta AWS (Organization)
-- [ ] Criar conta Google Cloud (para Gemini + Maps)
-- [ ] Criar conta Meta Business (WhatsApp Business API)
-- [ ] Criar organização GitHub + repositório monorepo
-- [ ] Solicitar aprovação WhatsApp Business (pode demorar 1-2 semanas)
-- [ ] Criar conta Stripe/gateway de pagamento
+- [x] Criar conta AWS (Organization) ✅
+- [ ] Criar conta Google Cloud (para Gemini + Maps) ⏳ **BLOQUEADOR**
+- [x] Criar conta Meta Business (WhatsApp Business API) ⏳ Aguardando aprovação (3-7 dias)
+- [x] Criar organização GitHub + repositório monorepo ✅
+- [ ] Solicitar aprovação WhatsApp Business (pode demorar 1-2 semanas) ⏳ Em andamento
+- [ ] Criar conta Stripe/gateway de pagamento ⚠️ Fase futura
 
 ### Tarefas Técnicas ✅
 - [x] Setup inicial do monorepo (Turborepo + pnpm)
@@ -20,27 +20,27 @@
 ## Semana 2: IaC Base
 
 ### Tarefas
-- [ ] Setup Terraform/CDK na pasta `/infra`
-- [ ] Criar módulo: VPC (se necessário)
-- [ ] Criar módulo: DynamoDB (tabelas NAgentCore e ChatHistory)
-- [ ] Criar módulo: S3 (buckets para docs e assets)
-- [ ] Criar módulo: API Gateway
-- [ ] Pipeline CI/CD básico (GitHub Actions)
+- [x] Setup Terraform/CDK na pasta `/infra` ✅
+- [x] Criar módulo: VPC (não necessário - usando default) ✅
+- [x] Criar módulo: DynamoDB (tabelas NAgentCore e ChatHistory) ✅
+- [x] Criar módulo: S3 (buckets para docs e assets) ✅
+- [x] Criar módulo: API Gateway ✅
+- [x] Pipeline CI/CD básico (GitHub Actions) ✅
 
-### Entregável
-Deploy de "Hello World" Lambda via pipeline
+### Entregável ✅
+Deploy de "Hello World" Lambda via pipeline - **CONCLUÍDO**
 
 ## Semana 3: Autenticação
 
 ### Tarefas
-- [ ] Configurar Amazon Cognito User Pool
-- [ ] Implementar fluxos: signup, login, forgot password
-- [ ] Configurar OAuth (Google/Microsoft)
-- [ ] Criar Lambda de validação de token
-- [ ] Criar middleware de auth para API Gateway
+- [x] Configurar Amazon Cognito User Pool ✅
+- [x] Implementar fluxos: signup, login, forgot password ✅
+- [x] Configurar OAuth (Google/Microsoft) ✅ (Facebook aguardando aprovação)
+- [x] Criar Lambda de validação de token ✅
+- [x] Criar middleware de auth para API Gateway ✅
 
-### Entregável
-Endpoint `/auth/login` funcionando
+### Entregável ✅
+Endpoint `/auth/login` funcionando - **CONCLUÍDO**
 
 ## Semana 4: WhatsApp Webhook
 
@@ -51,8 +51,23 @@ Endpoint `/auth/login` funcionando
 - [x] Criar Lambda para enviar mensagens de resposta
 - [x] Testar fluxo: usuário envia "Oi" → bot responde "Olá!"
 
-### Entregável
-Bot WhatsApp respondendo mensagens básicas
+### Entregável ✅
+Bot WhatsApp respondendo mensagens básicas - **CONCLUÍDO** ⚠️ Aguardando Meta Business para testes reais
+
+### Status Atual (28/12/2024)
+- ✅ Webhook implementado e funcional
+- ✅ Testes simulados passando (3/3 cenários)
+- ⏳ Meta Business em aprovação (3-7 dias)
+- ⏳ Access Token permanente pendente (usando token temporário)
+- ⏳ Phone Number ID pendente (usando ID temporário)
+
+### Próximos Passos Após Aprovação
+1. Gerar Access Token permanente no Meta for Developers
+2. Obter Phone Number ID real
+3. Atualizar GitHub Secrets com valores reais
+4. Configurar webhook na plataforma Meta
+5. Testar envio de mensagens para número real
+6. Validar interactive messages (botões, listas)
 
 ### Arquivos Implementados
 - `services/whatsapp-bot/src/types.ts` - Tipos do WhatsApp Cloud API
@@ -75,11 +90,26 @@ Bot WhatsApp respondendo mensagens básicas
 
 ## Checklist de Conclusão Fase 1
 
+### Concluído ✅
 - [x] Monorepo configurado e rodando localmente
 - [x] Infra AWS criada via IaC (Terraform)
-- [x] Auth funcionando (Cognito + OAuth Google/Facebook/Microsoft)
-- [x] WhatsApp webhook recebendo e respondendo
+- [x] Auth funcionando (Cognito + OAuth Google/Microsoft)
+- [x] WhatsApp webhook recebendo e processando (testado com simulação)
 - [x] Pipeline CI/CD deployando automaticamente
+- [x] Pipeline otimizado (economia de 35% no tempo)
+
+### Parcialmente Concluído 🟡
+- [x] Auth OAuth Facebook (aguardando aprovação Meta Business)
+- [x] WhatsApp Bot (aguardando aprovação Meta Business para testes reais)
+- [ ] SES em produção (ainda em sandbox mode)
+
+### Pendente ⏳ BLOQUEADORES
+- [ ] **Google Cloud APIs (Gemini + Maps)** - Necessário para Fase 2
+- [ ] **Aprovação Meta Business** - Necessário para WhatsApp real (3-7 dias)
+- [ ] **SES Produção** - Necessário para emails em produção
+
+### Não Crítico (Fase Futura)
+- [ ] Stripe/Payment Gateway
 
 ## Endpoints Implementados
 
@@ -106,3 +136,46 @@ Bot WhatsApp respondendo mensagens básicas
 - **S3**: n-agent-documents-prod, n-agent-assets-prod, n-agent-web-prod
 - **Lambda**: auth, authorizer, whatsapp-bot, trip-planner, integrations
 - **SES**: noreply@n-agent.com (sandbox)
+
+---
+
+## Limpeza e Sanitização
+
+### Arquivos Removidos (28/12/2024)
+- ❌ `test-whatsapp-bot.ps1` - Script de teste temporário
+- ❌ `docs/WHATSAPP_TESTING.md` - Documentação de teste temporária
+- ❌ `events/whatsapp-text-message.json` - Evento de teste
+- ❌ `events/whatsapp-menu-request.json` - Evento de teste
+- ❌ `events/whatsapp-trip-intent.json` - Evento de teste
+
+### Arquivos para Revisar
+- ⚠️ `test-email.txt` - Email de teste do SES (pode remover)
+- ⚠️ `template.yaml` - SAM template para desenvolvimento local (manter se usar SAM local)
+- ⚠️ `ses-policy.json` - Policy IAM do SES (manter para referência)
+- ⚠️ `events/*.json` - Eventos de teste para lambdas (manter para desenvolvimento)
+
+### Arquivos Mantidos (Úteis)
+- ✅ `docs/PIPELINE_OPTIMIZATION.md` - Documentação de otimizações
+- ✅ `docs/*.md` - Documentação técnica
+- ✅ `events/create-trip.json` - Exemplo de evento trip planner
+- ✅ `events/health-check.json` - Exemplo de health check
+- ✅ `events/whatsapp-*.json` - Eventos para testes locais
+
+---
+
+## Documentação Criada
+
+- ✅ [`docs/PIPELINE_OPTIMIZATION.md`](../../docs/PIPELINE_OPTIMIZATION.md) - Otimizações de CI/CD
+- ✅ [`PENDENCIAS.md`](./PENDENCIAS.md) - Bloqueadores e próximos passos
+- ✅ Este arquivo atualizado com status completo
+
+---
+
+## Próxima Fase
+
+📋 Ver arquivo [`PENDENCIAS.md`](./PENDENCIAS.md) para bloqueadores antes de iniciar Fase 2.
+
+**Prioridade Máxima**:
+1. Configurar Google Cloud APIs (Gemini + Maps)
+2. Aguardar aprovação Meta Business
+3. (Opcional) Mover SES para produção ou usar provedor alternativo

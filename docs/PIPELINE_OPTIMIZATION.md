@@ -28,6 +28,16 @@
 - Apenas último commit + pai para comparações
 - **Economia estimada**: 2-5s
 
+### 6. **Path Filters (Smart Skipping)** 🎯 **NOVO**
+- Ignora execução em mudanças de docs/README/etc
+- CI e Deploy não rodam para commits irrelevantes
+- Exemplos ignorados:
+  - `**.md` (README, docs)
+  - `docs/**` (documentação)
+  - `.promtps_iniciais/**` (planejamento)
+  - Scripts de teste temporários
+- **Economia estimada**: 100% em commits de docs (~2-3min economizados por commit doc)
+
 ## Resultados Esperados
 
 ### Antes
@@ -39,6 +49,7 @@
 - **CI Pipeline**: ~30-35s ⬇️ 25% mais rápido
 - **Deploy Pipeline**: ~1m50s-2m10s (110-130s) ⬇️ 30-35% mais rápido
 - **Total por commit**: ~2m20s-2m45s ⬇️ 20-30% economia
+- **Commits de docs**: **ZERO minutos** 🎉 (pipeline não executa)
 
 ## Configuração Opcional: Turborepo Remote Cache
 
@@ -60,11 +71,15 @@ Para máxima performance, você pode habilitar cache remoto do Turborepo:
 
 Use [turborepo-remote-cache](https://github.com/ducktors/turborepo-remote-cache) self-hosted.
 
-## Dicas Adicionais
+### Dicas Adicionais
 
 ### Para Reduzir Uso de Minutos Ainda Mais
 
-1. **Branch Protection**: Configure para não rodar CI em branches pessoais
+1. ✅ **Path Filters** (IMPLEMENTADO): Pula pipelines em mudanças irrelevantes
+   - Commits de docs não executam pipelines
+   - Economia: ~3-5 commits/dia de docs = 15min/dia salvos
+
+2. **Branch Protection**: Configure para não rodar CI em branches pessoais
    ```yaml
    on:
      push:

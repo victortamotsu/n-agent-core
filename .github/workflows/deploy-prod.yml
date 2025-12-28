@@ -3,6 +3,14 @@ name: Deploy to Production
 on:
   push:
     branches: [main]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+      - '.promtps_iniciais/**'
+      - 'LICENSE'
+      - '.gitignore'
+      - 'test-*.ps1'
+      - 'test-*.sh'
     tags:
       - 'v*.*.*'
   workflow_dispatch:

@@ -1,6 +1,6 @@
 # Pendências para Continuação do Projeto
 
-## 🚨 Bloqueadores Críticos
+## � Pendências da Fase 1 (Não Críticas)
 
 ### 1. Ativação Meta Business / WhatsApp Business API
 
@@ -93,34 +93,35 @@
 
 ---
 
-### 4. Google Cloud APIs (Gemini + Maps)
+### 4. Google Cloud APIs (Gemini + Maps) - FASE 2
 
-**Status**: ❓ Não Verificado
+**Status**: ⏳ Planejado para Fase 2
 
 **Contexto**:
-- Conta Google Cloud mencionada na Semana 1 mas não configurada
-- Necessário para:
-  - Gemini AI (geração de roteiros)
-  - Google Maps API (geocoding, lugares)
+- ✅ Conta Google Cloud criada (OAuth configurado)
+- ⏳ APIs de IA e Maps não necessárias na Fase 1
+- Necessário para Fase 2:
+  - Gemini AI (geração de roteiros inteligentes)
+  - Google Maps API (geocoding, lugares, rotas)
 
-**Ações Necessárias**:
-1. Criar projeto no Google Cloud Console
+**Ações Necessárias (Antes da Fase 2)**:
+1. Acessar projeto no Google Cloud Console
 2. Habilitar APIs:
    - Gemini API (generative-ai)
    - Maps JavaScript API
    - Places API
    - Geocoding API
-3. Gerar API Key e configurar restrições
+   - Directions API
+3. Gerar API Keys e configurar restrições
 4. Adicionar ao GitHub Secrets:
    ```bash
-   gh secret set GOOGLE_CLOUD_API_KEY --body "AIzaxxxxxxxxxx"
+   gh secret set GOOGLE_MAPS_API_KEY --body "AIzaxxxxxxxxxx"
    gh secret set GEMINI_API_KEY --body "AIzaxxxxxxxxxx"
    ```
 
 **Impacto**:
-- ❌ Trip Planner não pode gerar roteiros inteligentes
-- ❌ Sem sugestões de lugares baseadas em IA
-- ⚠️ Funcionalidade core do produto bloqueada
+- ✅ Não bloqueia conclusão da Fase 1
+- ⚠️ Necessário para iniciar desenvolvimento de IA na Fase 2
 
 ---
 
@@ -145,12 +146,23 @@
 ---
 
 ## 📋 Checklist de Desbloqueio
+✅ Fase 1 - CONCLUÍDA (95%)
+
+**Funcional**:
+- [x] Monorepo configurado
+- [x] Infra AWS completa
+- [x] Auth + OAuth (Google/Microsoft)
+- [x] WhatsApp Bot implementado e testado (simulação)
+- [x] Pipeline CI/CD otimizado
+
+**Aguardando**:
+- [ ] Meta Business aprovado (3-7 dias) - para testes reais WhatsApp
 
 ### Para Começar Fase 2 (Mínimo Necessário):
 
-- [ ] ✅ Meta Business aprovado e WhatsApp configurado
-- [ ] ✅ Google Cloud APIs configuradas (Gemini + Maps)
-- [ ] 🟡 SES em produção (ou usar provedor alternativo tipo SendGrid)
+- [ ] Google Cloud APIs configuradas (Gemini + Maps) - **CRÍTICO**
+- [ ] Meta Business aprovado (opcional, pode continuar com simulações)
+- [ ] SES em produção (opcional, usar SendGrid temporariamenteternativo tipo SendGrid)
 - [ ] 🟡 OAuth testado (pelo menos 1 provider)
 
 ### Para Lançamento Beta (Recomendado):

@@ -4,7 +4,7 @@
 
 ### Tarefas Manuais
 - [x] Criar conta AWS (Organization) ✅
-- [ ] Criar conta Google Cloud (para Gemini + Maps) ⏳ **BLOQUEADOR**
+- [x] Criar conta Google Cloud (para OAuth) ✅ *Gemini + Maps serão configurados na Fase 2*
 - [x] Criar conta Meta Business (WhatsApp Business API) ⏳ Aguardando aprovação (3-7 dias)
 - [x] Criar organização GitHub + repositório monorepo ✅
 - [ ] Solicitar aprovação WhatsApp Business (pode demorar 1-2 semanas) ⏳ Em andamento
@@ -103,10 +103,12 @@ Bot WhatsApp respondendo mensagens básicas - **CONCLUÍDO** ⚠️ Aguardando M
 - [x] WhatsApp Bot (aguardando aprovação Meta Business para testes reais)
 - [ ] SES em produção (ainda em sandbox mode)
 
-### Pendente ⏳ BLOQUEADORES
-- [ ] **Google Cloud APIs (Gemini + Maps)** - Necessário para Fase 2
-- [ ] **Aprovação Meta Business** - Necessário para WhatsApp real (3-7 dias)
-- [ ] **SES Produção** - Necessário para emails em produção
+### Pendente ⏳ (Não Bloqueia Fase 1)
+- [ ] **Aprovação Meta Business** - Para testes reais WhatsApp (3-7 dias)
+- [ ] **SES Produção** - Para emails em produção (opcional)
+
+### Fase 2 (Futura)
+- [ ] **Google Cloud APIs (Gemini + Maps)** - Necessário para IA e geração de roteiros
 
 ### Não Crítico (Fase Futura)
 - [ ] Stripe/Payment Gateway

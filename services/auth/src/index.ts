@@ -12,7 +12,7 @@ import { createLogger } from '@n-agent/logger';
 
 const logger = createLogger('auth');
 const client = new CognitoIdentityProviderClient({ region: process.env.AWS_REGION || 'us-east-1' });
-const USER_POOL_ID = process.env.COGNITO_USER_POOL_ID!;
+// const USER_POOL_ID = process.env.COGNITO_USER_POOL_ID!;
 const CLIENT_ID = process.env.COGNITO_CLIENT_ID!;
 
 export const handler = async (event: APIGatewayProxyEventV2): Promise<APIGatewayProxyResultV2> => {

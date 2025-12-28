@@ -458,6 +458,31 @@ resource "aws_lambda_function" "integrations" {
   }
 }
 
+resource "aws_lambda_function" "ai_orchestrator" {
+  function_name = "${var.project_name}-ai-orchestrator"
+  role          = aws_iam_role.ai_orchestrator_role.arn
+  handler       = "index.handler"
+  runtime       = "nodejs18.x"
+  timeout       = 60
+  memory_size   = 1024
+
+  filename         = "${path.module}/../../../services/ai-orchestrator/ai-orchestrator.zip"
+  source_code_hash = fileexists("${path.module}/../../../services/ai-orchestrator/ai-orchestrator.zip") ? filebase64sha256("${path.module}/../../../services/ai-orchestrator/ai-orchestrator.zip") : "placeholder"
+
+  environment {
+    variables = {
+      DYNAMODB_TABLE          = aws_dynamodb_table.n_agent_core.name
+      BEDROCK_AGENT_ID        = aws_bedrockagent_agent.n_agent.agent_id
+      BEDROCK_AGENT_ALIAS_ID  = aws_bedrockagent_agent_alias.prod.agent_alias_id
+      ENVIRONMENT             = var.environment
+    }
+  }
+
+  tags = {
+    Name = "ai-orchestrator"
+  }
+}
+
 # CloudWatch Log Groups for Lambdas
 resource "aws_cloudwatch_log_group" "whatsapp_bot" {
   name              = "/aws/lambda/${aws_lambda_function.whatsapp_bot.function_name}"
@@ -483,6 +508,15 @@ resource "aws_cloudwatch_log_group" "integrations" {
 
   tags = {
     Name = "integrations-logs"
+  }
+}
+
+resource "aws_cloudwatch_log_group" "ai_orchestrator" {
+  name              = "/aws/lambda/${aws_lambda_function.ai_orchestrator.function_name}"
+  retention_in_days = 7
+
+  tags = {
+    Name = "ai-orchestrator-logs"
   }
 }
 

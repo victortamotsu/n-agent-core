@@ -174,7 +174,7 @@ resource "aws_iam_role_policy_attachment" "action_groups_logs" {
 resource "aws_lambda_permission" "bedrock_action_groups" {
   statement_id  = "AllowBedrockInvoke"
   action        = "lambda:InvokeFunction"
-  function_name = "${var.project_name}-action-groups"
+  function_name = "${var.project_name}-ai-orchestrator"
   principal     = "bedrock.amazonaws.com"
   source_arn    = aws_bedrockagent_agent.n_agent.agent_arn
 }
@@ -262,7 +262,7 @@ resource "aws_bedrockagent_agent_action_group" "trip_management" {
   skip_resource_in_use_check = true
 
   action_group_executor {
-    lambda = "arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:${var.project_name}-action-groups"
+    lambda = "arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:function:${var.project_name}-ai-orchestrator"
   }
 
   api_schema {

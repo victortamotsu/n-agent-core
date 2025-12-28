@@ -154,8 +154,8 @@ resource "aws_iam_role_policy" "action_groups_dynamodb" {
           "dynamodb:Query"
         ]
         Resource = [
-          aws_dynamodb_table.main.arn,
-          "${aws_dynamodb_table.main.arn}/index/*"
+          aws_dynamodb_table.n_agent_core.arn,
+          "${aws_dynamodb_table.n_agent_core.arn}/index/*"
         ]
       }
     ]
@@ -237,8 +237,8 @@ resource "aws_iam_role_policy" "ai_orchestrator_dynamodb" {
           "dynamodb:Scan"
         ]
         Resource = [
-          aws_dynamodb_table.main.arn,
-          "${aws_dynamodb_table.main.arn}/index/*"
+          aws_dynamodb_table.n_agent_core.arn,
+          "${aws_dynamodb_table.n_agent_core.arn}/index/*"
         ]
       }
     ]
@@ -284,7 +284,6 @@ resource "aws_ssm_parameter" "bedrock_agent_id" {
   description = "ID do Bedrock Agent"
   type        = "String"
   value       = aws_bedrockagent_agent.n_agent.agent_id
-  tags        = var.tags
 }
 
 resource "aws_ssm_parameter" "bedrock_agent_alias_id" {
@@ -292,7 +291,6 @@ resource "aws_ssm_parameter" "bedrock_agent_alias_id" {
   description = "ID do alias do Bedrock Agent"
   type        = "String"
   value       = aws_bedrockagent_agent_alias.prod.agent_alias_id
-  tags        = var.tags
 }
 
 # -----------------------------------------------------------------------------

@@ -8,16 +8,16 @@ export interface IUser {
   updatedAt: string;
 }
 
-// Trip types
-export type TripPhase = 'KNOWLEDGE' | 'PLANNING' | 'BOOKING' | 'CONCIERGE' | 'MEMORIES';
-export type TripStatus = 'DRAFT' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED';
+// Re-export AI types from dedicated module (includes TripPhase, TripStatus enums)
+export * from './ai.js';
 
+// Legacy trip types (mantidos por compatibilidade, considere usar TripState do ai.ts)
 export interface ITrip {
   id: string;
   userId: string;
   name: string;
-  phase: TripPhase;
-  status: TripStatus;
+  phase: string;
+  status: string;
   destinations: string[];
   startDate?: string;
   endDate?: string;
@@ -77,6 +77,3 @@ export interface IChatMessage {
   metadata?: Record<string, unknown>;
   timestamp: string;
 }
-
-// Re-export AI types from dedicated module
-export * from './ai.js';

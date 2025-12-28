@@ -150,11 +150,11 @@ async function saveMessage(sessionId: string, role: 'user' | 'assistant', conten
 }
 
 /**
- * Busca mensagens recentes da sessão
+ * Busca mensagens recentes da sessão (TODO: implementar)
  */
-// TODO: Implementar query com limit e ordenação
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function _getRecentMessages(_sessionId: string, _limit: number = 10): Promise<ChatMessage[]> {
+  // TODO: Implementar query com limit e ordenação
   return [];
 }
 

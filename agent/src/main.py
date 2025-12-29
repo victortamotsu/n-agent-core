@@ -16,8 +16,6 @@ from typing import Dict, Any
 from datetime import datetime, timezone
 
 from bedrock_agentcore.runtime import BedrockAgentCoreApp
-from strands import Agent
-from strands.models import BedrockModel
 
 # Importar Router Agent local
 try:

@@ -4,11 +4,7 @@
 # AWS doesn't currently have native Terraform support for AgentCore Runtime
 # We'll use null_resource with local-exec to deploy via CLI
 
-data "archive_file" "agent_code" {
-  type        = "zip"
-  source_dir  = "${path.root}/../../agent/src"
-  output_path = "${path.module}/agent-code.zip"
-}
+# Archive removed - AgentCore is deployed directly via CLI, no zip needed
 
 # ============================================================================
 # IMPORTANT: AgentCore Memory uses AWS-managed internal storage

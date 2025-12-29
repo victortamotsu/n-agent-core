@@ -17,11 +17,31 @@ on:
       - 'LICENSE'
 
 jobs:
+  changes:
+    name: Detect Changes
+    runs-on: ubuntu-latest
+    outputs:
+      agent: ${{ steps.filter.outputs.agent }}
+      infra: ${{ steps.filter.outputs.infra }}
+      lambdas: ${{ steps.filter.outputs.lambdas }}
+    steps:
+    - uses: actions/checkout@v4
+    - uses: dorny/paths-filter@v3
+      id: filter
+      with:
+        filters: |
+          agent:
+            - 'agent/**'
+          infra:
+            - 'infra/**'
+          lambdas:
+            - 'lambdas/**'
+
   lint:
     name: Lint Python Code
     runs-on: ubuntu-latest
-    # Only run if Python code changed
-    if: contains(github.event.head_commit.modified, 'agent/') || github.event_name == 'pull_request'
+    needs: changes
+    if: needs.changes.outputs.agent == 'true'
     
     steps:
     - uses: actions/checkout@v4
@@ -64,8 +84,8 @@ jobs:
   test:
     name: Test Python Code
     runs-on: ubuntu-latest
-    # Only run if Python code changed
-    if: contains(github.event.head_commit.modified, 'agent/') || github.event_name == 'pull_request'
+    needs: changes
+    if: needs.changes.outputs.agent == 'true'
     
     steps:
     - uses: actions/checkout@v4
@@ -107,16 +127,14 @@ jobs:
   deploy:
     name: Deploy Infrastructure via Terraform
     runs-on: ubuntu-latest
-    # Deploy only runs if:
-    # 1. On main branch push
-    # 2. Infrastructure, agent, or lambdas code changed
-    # Note: Does NOT depend on lint/test to allow infra-only changes
+    needs: changes
+    # Deploy runs if infra, agent, or lambdas changed AND on main branch
     if: |
       github.ref == 'refs/heads/main' && 
       github.event_name == 'push' &&
-      (contains(github.event.head_commit.modified, 'infra/') || 
-       contains(github.event.head_commit.modified, 'agent/') ||
-       contains(github.event.head_commit.modified, 'lambdas/'))
+      (needs.changes.outputs.infra == 'true' || 
+       needs.changes.outputs.agent == 'true' ||
+       needs.changes.outputs.lambdas == 'true')
     timeout-minutes: 30
     
     steps:

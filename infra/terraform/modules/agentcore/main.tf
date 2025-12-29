@@ -10,83 +10,44 @@ data "archive_file" "agent_code" {
   output_path = "${path.module}/agent-code.zip"
 }
 
-# ⚠️ COST WARNING: OpenSearch Serverless = $345.60/month minimum (2 OCUs)
-# For POC/Fase 0-1: Consider commenting out OpenSearch resources below
-# Agents work perfectly without Memory - just lose context between sessions
-# Uncomment when you have 10+ paying customers to justify cost
-# Alternative: Implement custom DynamoDB-based memory storage (~$5/month)
+# ============================================================================
+# IMPORTANT: AgentCore Memory uses AWS-managed internal storage
+# ============================================================================
+# AgentCore Memory is a FULLY MANAGED service that does NOT require:
+#   - OpenSearch Serverless ($345/month) ❌
+#   - S3 Vectors ❌
+#   - Aurora PostgreSQL ❌
+#   - DynamoDB custom implementation ❌
+#
+# AWS handles all storage internally (likely DynamoDB + S3) at $0 extra cost.
+# Memory is included in AgentCore Runtime pricing.
+#
+# To create Memory, use AWS CLI (NOT Terraform):
+# 
+#   aws bedrock-agentcore-control create-memory \
+#     --name "${var.project_name}-${var.environment}-memory" \
+#     --description "Session memory for ${var.project_name} agent" \
+#     --strategies '[{
+#       "summaryMemoryStrategy": {
+#         "name": "SessionSummarizer",
+#         "namespaces": ["/summaries/{actorId}/{sessionId}"]
+#       }
+#     }]' \
+#     --region us-east-1
+#
+# Then store the Memory ID as a GitHub Secret: BEDROCK_AGENTCORE_MEMORY_ID
+# and pass it as an environment variable to the agent runtime.
+#
+# For implementation, use the MemoryClient SDK in Python:
+#   from bedrock_agentcore.memory import MemoryClient
+#   memory = MemoryClient(region_name="us-east-1")
+#   memory.create_event(memory_id=memory_id, messages=[...])
+#
+# References:
+#   - https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/memory.html
+#   - https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/agentcore-sdk-memory.html
+# ============================================================================
 
-# Create Bedrock Agent Memory (EXPENSIVE - READ WARNING ABOVE)
-resource "aws_bedrockagent_knowledge_base" "memory" {
-  name        = "${var.project_name}-${var.environment}-memory"
-  description = "Memory for ${var.project_name} agent"
-  role_arn    = var.iam_role_arn
-
-  knowledge_base_configuration {
-    type = "VECTOR"
-    vector_knowledge_base_configuration {
-      embedding_model_arn = "arn:aws:bedrock:us-east-1::foundation-model/amazon.titan-embed-text-v2:0"
-    }
-  }
-
-  storage_configuration {
-    type = "OPENSEARCH_SERVERLESS"
-    opensearch_serverless_configuration {
-      collection_arn    = aws_opensearchserverless_collection.memory.arn
-      vector_index_name = "bedrock-knowledge-base-default-index"
-
-      field_mapping {
-        vector_field   = "bedrock-knowledge-base-default-vector"
-        text_field     = "AMAZON_BEDROCK_TEXT_CHUNK"
-        metadata_field = "AMAZON_BEDROCK_METADATA"
-      }
-    }
-  }
-}
-
-# OpenSearch Serverless collection for memory
-resource "aws_opensearchserverless_collection" "memory" {
-  name = "${var.project_name}-${var.environment}-memory"
-  type = "VECTORSEARCH"
-
-  tags = {
-    Environment = var.environment
-  }
-}
-
-resource "aws_opensearchserverless_security_policy" "memory_encryption" {
-  name = "${var.project_name}-${var.environment}-memory-encryption"
-  type = "encryption"
-  policy = jsonencode({
-    Rules = [
-      {
-        Resource = [
-          "collection/${aws_opensearchserverless_collection.memory.name}"
-        ]
-        ResourceType = "collection"
-      }
-    ],
-    AWSOwnedKey = true
-  })
-}
-
-resource "aws_opensearchserverless_security_policy" "memory_network" {
-  name = "${var.project_name}-${var.environment}-memory-network"
-  type = "network"
-  policy = jsonencode([
-    {
-      Rules = [
-        {
-          Resource = [
-            "collection/${aws_opensearchserverless_collection.memory.name}"
-          ]
-          ResourceType = "collection"
-        }
-      ],
-      AllowFromPublic = true
-    }
-  ])
-}
 
 # Deploy AgentCore using CLI (since Terraform provider doesn't support it yet)
 resource "null_resource" "agentcore_deploy" {

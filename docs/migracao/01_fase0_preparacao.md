@@ -59,23 +59,32 @@ aws bedrock list-foundation-models --region us-east-1 --query "modelSummaries[?c
 
 ---
 
-## Passo 2: Configurar Acesso ao AgentCore
+## Passo 2: Verificar Acesso ao AgentCore Runtime
 
-### Ações Manuais (Console AWS)
+### Informação Importante
 
-1. Acesse o [Amazon Bedrock AgentCore Console](https://console.aws.amazon.com/bedrock-agentcore/)
-2. Se for o primeiro acesso:
-   - Aceite os termos de serviço
-   - O console criará automaticamente as roles necessárias
-3. Verifique que você pode acessar:
-   - Runtime
-   - Memory
-   - Gateway
-   - Observability
+AgentCore Runtime não requer setup inicial via console. Você pode começar a deployar agents imediatamente usando o CLI `agentcore`.
+
+**Primitivas disponíveis automaticamente:**
+- ✅ Runtime (deploy de agents)
+- ✅ Memory (session management - sem OpenSearch!)
+- ✅ Identity (workload identities)
+- ✅ Observability (logs automáticos)
+
+**NÃO configurar manualmente:**
+- ❌ OpenSearch Serverless (custava $345/mês)
+- ❌ Knowledge Base (não precisamos de RAG)
+- ❌ S3 Vectors (não precisamos de vector search)
+
+Memory usa storage interno gerenciado pela AWS (DynamoDB + S3) sem custo extra.
 
 ### Verificação via CLI
 ```bash
-aws bedrock-agentcore-control list-agent-runtimes --region us-east-1
+# Testar acesso ao AgentCore
+agentcore --version
+
+# Listar agents deployados (vazio inicialmente)
+agentcore list
 ```
 
 ---
@@ -564,6 +573,12 @@ Arquivos novos além do especificado:
 **Tempo de Implementação**: 2-3 dias (vs 1 dia especificado)  
 **ROI**: Antecipamos 2-3 dias da Fase 1, resultando em ganho líquido  
 **Qualidade**: Testes automatizados, documentação completa, best practices
+
+**⚠️ IMPORTANTE: AgentCore Memory**
+- Memory será configurado na Fase 1 via AWS CLI
+- **NÃO usa OpenSearch** ($345/mês economizado!)
+- AWS gerencia storage internamente (DynamoDB + S3)
+- Custo: $0 extra (incluído no Runtime pricing)
 
 **Recomendação**: 🚀 Prosseguir imediatamente para Fase 1
 

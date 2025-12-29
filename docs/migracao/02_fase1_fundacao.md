@@ -93,125 +93,179 @@ agentcore invoke '{"prompt": "Olá, estou planejando uma viagem!"}'
 
 ### Passo 1.2: Configurar AgentCore Memory
 
-#### Ações de Construção
+#### IMPORTANTE: Memory é Gerenciado pela AWS
 
-**agent/src/memory_config.py**
-```python
-from bedrock_agentcore_starter_toolkit.operations.memory.manager import MemoryManager
-from bedrock_agentcore_starter_toolkit.operations.memory.models.strategies import (
-    SemanticStrategy,
-    SummaryStrategy
-)
+AgentCore Memory **NÃO requer** provisionar:
+- ❌ OpenSearch Serverless ($345/mês)
+- ❌ S3 Vectors
+- ❌ Aurora PostgreSQL
+- ❌ DynamoDB custom
 
-def create_memory():
-    """Cria o recurso de memória para o n-agent."""
-    
-    memory_manager = MemoryManager(region_name="us-east-1")
-    
-    memory = memory_manager.get_or_create_memory(
-        name="NAgentMemory",
-        description="Memória do assistente de viagens n-agent",
-        strategies=[
-            # Extrai fatos importantes das conversas
-            SemanticStrategy(
-                name="tripFacts",
-                namespaces=[
-                    "/trips/{tripId}/facts",
-                    "/users/{userId}/preferences"
-                ],
-            ),
-            # Resume conversas longas
-            SummaryStrategy(
-                name="conversationSummary",
-                namespaces=["/trips/{tripId}/summary"],
-            )
-        ]
-    )
-    
-    print(f"Memory ID: {memory.get('id')}")
-    return memory
+AWS gerencia storage internamente (DynamoDB + S3) sem custo extra.
 
-if __name__ == "__main__":
-    create_memory()
-```
-
-#### Comando
+#### Criar Memory Resource via AWS CLI
 
 ```bash
-cd agent
-uv run python src/memory_config.py
+# Criar Memory com estratégia de sumarização
+aws bedrock-agentcore-control create-memory \
+  --name "n-agent-memory" \
+  --description "Session memory for n-agent travel assistant" \
+  --strategies '[
+    {
+      "summaryMemoryStrategy": {
+        "name": "TripSessionSummarizer",
+        "namespaces": [
+          "/summaries/{actorId}/{sessionId}",
+          "/trips/{tripId}/context"
+        ]
+      }
+    }
+  ]' \
+  --region us-east-1
 ```
 
-#### Saída Esperada
+#### Salvar Memory ID
+
+```bash
+# Exemplo de output:
+# {
+#   "id": "mem-abc123xyz",
+#   "name": "n-agent-memory",
+#   "status": "ACTIVE"
+# }
+
+# Adicionar ao GitHub Secrets
+gh secret set BEDROCK_AGENTCORE_MEMORY_ID --body "mem-abc123xyz"
+
+# Adicionar ao .env local
+echo "BEDROCK_AGENTCORE_MEMORY_ID=mem-abc123xyz" >> agent/.env
 ```
-Creating memory resource...
-Memory ID: mem-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+
+#### Verificação
+
+```bash
+# Listar memories
+aws bedrock-agentcore-control list-memories --region us-east-1
+
+# Detalhes do memory
+aws bedrock-agentcore-control get-memory \
+  --memory-id mem-abc123xyz \
+  --region us-east-1
 ```
 
 ---
 
 ### Passo 1.3: Integrar Memory no Agente
 
+#### Usar MemoryClient SDK (não custom implementation)
+
+**agent/src/memory/agentcore_memory.py** (já implementado):
+
+```python
+from bedrock_agentcore.memory import MemoryClient
+
+class AgentCoreMemory:
+    def __init__(self, memory_id: str, region_name: str = "us-east-1"):
+        self.memory_id = memory_id
+        self.client = MemoryClient(region_name=region_name)
+    
+    def add_interaction(
+        self,
+        actor_id: str,
+        session_id: str,
+        user_message: str,
+        agent_response: str
+    ) -> None:
+        """Save interaction to Memory."""
+        request = CreateEventRequest(
+            memory_id=self.memory_id,
+            actor_id=actor_id,
+            session_id=session_id,
+            messages=[
+                ConversationalMessage(content=user_message, role=MessageRole.USER),
+                ConversationalMessage(content=agent_response, role=MessageRole.ASSISTANT)
+            ]
+        )
+        self.client.create_event(request)
+    
+    def retrieve_context(
+        self,
+        actor_id: str,
+        session_id: str,
+        query: str,
+        top_k: int = 5
+    ) -> List[Dict]:
+        """Retrieve relevant memories."""
+        request = RetrieveMemoriesRequest(
+            memory_id=self.memory_id,
+            actor_id=actor_id,
+            session_id=session_id,
+            query=query,
+            max_results=top_k
+        )
+        
+        response = self.client.retrieve_memories(request)
+        return [
+            {
+                "content": m.content,
+                "timestamp": m.timestamp,
+                "role": m.role,
+                "score": m.score
+            }
+            for m in response.memories
+        ]
+```
+
 #### Atualizar agent/src/main.py
 
 ```python
 from bedrock_agentcore.runtime import App
-from bedrock_agentcore.memory.session import MemorySessionManager
-from bedrock_agentcore.memory.constants import ConversationalMessage, MessageRole
+from bedrock_agentcore.memory import MemoryClient
+from bedrock_agentcore.memory.types import (
+    ConversationalMessage,
+    MessageRole,
+    CreateEventRequest,
+    RetrieveMemoriesRequest
+)
 from strands import Agent
 import os
 
 app = App()
 
-# ID da memória criada no passo anterior
-MEMORY_ID = os.environ.get("AGENTCORE_MEMORY_ID")
+# ID da memória criada via AWS CLI
+MEMORY_ID = os.environ.get("BEDROCK_AGENTCORE_MEMORY_ID")
 
 @app.entrypoint
 def handle_request(event: dict) -> dict:
-    """Entrypoint do agente n-agent com memória."""
+    """Entrypoint do agente n-agent com Memory nativo."""
     
     prompt = event.get("prompt", "")
     user_id = event.get("user_id", "anonymous")
     trip_id = event.get("trip_id")
     session_id = event.get("session_id", f"session-{user_id}")
     
-    # Inicializar sessão de memória
-    session_manager = MemorySessionManager(
+    # Inicializar Memory client
+    memory = MemoryClient(region_name="us-east-1")
+    
+    # Recuperar contexto relevante
+    retrieve_request = RetrieveMemoriesRequest(
         memory_id=MEMORY_ID,
-        region_name="us-east-1"
-    )
-    
-    session = session_manager.create_memory_session(
         actor_id=user_id,
-        session_id=session_id
+        session_id=session_id,
+        query=prompt,
+        max_results=5
     )
     
-    # Recuperar histórico recente
-    recent_turns = session.get_last_k_turns(k=10)
-    history = "\n".join([
-        f"{t.role}: {t.content}" for t in recent_turns
-    ])
+    memories = memory.retrieve_memories(retrieve_request)
     
-    # Recuperar fatos de longo prazo (se houver viagem)
-    long_term_context = ""
-    if trip_id:
-        facts = session.search_long_term_memories(
-            query=prompt,
-            namespace_prefix=f"/trips/{trip_id}",
-            top_k=5
-        )
-        if facts:
-            long_term_context = "Fatos conhecidos:\n" + "\n".join([
-                f.content for f in facts
-            ])
+    # Construir contexto do prompt
+    context_parts = []
+    if memories.memories:
+        context_parts.append("## Previous Context")
+        for mem in memories.memories:
+            context_parts.append(f"- {mem.content} (score: {mem.score:.2f})")
     
-    # Construir contexto completo
-    full_context = f"""
-{long_term_context}
-
-Histórico recente:
-{history}
-"""
+    full_context = "\n".join(context_parts) if context_parts else ""
     
     # Executar agente
     agent = Agent(
@@ -226,11 +280,18 @@ Seja simpático, prestativo e proativo.
     
     response = agent.run(prompt)
     
-    # Salvar no histórico
-    session.add_turns(messages=[
-        ConversationalMessage(prompt, MessageRole.USER),
-        ConversationalMessage(str(response), MessageRole.ASSISTANT)
-    ])
+    # Salvar interação no Memory
+    event_request = CreateEventRequest(
+        memory_id=MEMORY_ID,
+        actor_id=user_id,
+        session_id=session_id,
+        messages=[
+            ConversationalMessage(content=prompt, role=MessageRole.USER),
+            ConversationalMessage(content=str(response), role=MessageRole.ASSISTANT)
+        ]
+    )
+    
+    memory.create_event(event_request)
     
     return {
         "result": str(response),
@@ -243,11 +304,26 @@ Seja simpático, prestativo e proativo.
 #### Atualizar .bedrock_agentcore.yaml
 
 ```yaml
+name: n-agent
+description: Assistente pessoal de viagens
+region: us-east-1
+
+runtime:
+  entrypoint: src/main.py
+  python_version: "3.13"
+  timeout: 300
+  memory: 1024
+
 environment:
   DYNAMODB_TABLE: n-agent-core
   S3_BUCKET: n-agent-documents
-  AGENTCORE_MEMORY_ID: mem-xxxxxxxx  # Substituir pelo ID real
+  BEDROCK_AGENTCORE_MEMORY_ID: mem-xxxxx  # Substituir pelo ID real
   LOG_LEVEL: INFO
+
+dependencies:
+  - strands-agents>=0.1.0
+  - boto3>=1.35.0
+  - bedrock-agentcore>=1.0.0  # SDK para Memory
 ```
 
 #### Re-deploy

@@ -1,5 +1,59 @@
 # Variables file - Production environment
 
+variable "aws_region" {
+  description = "AWS region for all resources"
+  type        = string
+  default     = "us-east-1"
+}
+
+variable "environment" {
+  description = "Environment name"
+  type        = string
+  default     = "prod"
+}
+
+variable "project_name" {
+  description = "Project name"
+  type        = string
+  default     = "n-agent-core"
+}
+
+variable "agentcore_timeout" {
+  description = "AgentCore timeout in seconds"
+  type        = number
+  default     = 600
+}
+
+variable "agentcore_memory" {
+  description = "AgentCore memory in MB"
+  type        = number
+  default     = 2048
+}
+
+variable "router_model" {
+  description = "Bedrock model for router agent"
+  type        = string
+  default     = "us.amazon.nova-micro-v1:0"
+}
+
+variable "chat_model" {
+  description = "Bedrock model for chat agent"
+  type        = string
+  default     = "us.amazon.nova-lite-v1:0"
+}
+
+variable "planning_model" {
+  description = "Bedrock model for planning agent"
+  type        = string
+  default     = "us.amazon.nova-pro-v1:0"
+}
+
+variable "vision_model" {
+  description = "Bedrock model for vision agent"
+  type        = string
+  default     = "us.amazon.nova-pro-v1:0"
+}
+
 variable "whatsapp_verify_token" {
   description = "WhatsApp webhook verification token"
   type        = string

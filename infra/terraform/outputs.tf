@@ -10,10 +10,11 @@ output "agentcore_agent_arn" {
   value       = module.agentcore.agent_arn
 }
 
-output "agentcore_memory_id" {
-  description = "Bedrock AgentCore memory ID"
-  value       = module.agentcore.memory_id
-}
+# Memory output commented until knowledge base is implemented in Phase 4
+# output "agentcore_memory_id" {
+#   description = "Bedrock AgentCore memory ID"
+#   value       = module.agentcore.memory_id
+# }
 
 output "whatsapp_lambda_arn" {
   description = "WhatsApp Lambda function ARN"

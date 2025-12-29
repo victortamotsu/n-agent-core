@@ -63,7 +63,7 @@ resource "null_resource" "agentcore_deploy" {
       export PLANNING_MODEL=${var.planning_model} && \
       export VISION_MODEL=${var.vision_model} && \
       export AWS_REGION=us-east-1 && \
-      export BEDROCK_AGENTCORE_MEMORY_ID=${aws_bedrockagent_knowledge_base.memory.id} && \
+      # export BEDROCK_AGENTCORE_MEMORY_ID=${aws_bedrockagent_knowledge_base.memory.id} && \
       uv run agentcore configure --entrypoint src/main.py && \
       uv run agentcore launch --name ${var.project_name}-${var.environment}
     EOT

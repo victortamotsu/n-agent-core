@@ -8,14 +8,15 @@ output "agent_arn" {
   value       = "arn:aws:bedrock:us-east-1:${data.aws_caller_identity.current.account_id}:agent/${var.project_name}-${var.environment}"
 }
 
-output "memory_id" {
-  description = "Bedrock AgentCore memory ID"
-  value       = aws_bedrockagent_knowledge_base.memory.id
-}
+# Memory outputs commented until knowledge base is implemented in Phase 4
+# output "memory_id" {
+#   description = "Bedrock AgentCore memory ID"
+#   value       = aws_bedrockagent_knowledge_base.memory.id
+# }
 
-output "memory_arn" {
-  description = "Bedrock AgentCore memory ARN"
-  value       = aws_bedrockagent_knowledge_base.memory.arn
-}
+# output "memory_arn" {
+#   description = "Bedrock AgentCore memory ARN"
+#   value       = aws_bedrockagent_knowledge_base.memory.arn
+# }
 
 data "aws_caller_identity" "current" {}

@@ -45,26 +45,13 @@
 # ============================================================================
 
 
-# Deploy AgentCore using CLI (since Terraform provider doesn't support it yet)
-resource "null_resource" "agentcore_deploy" {
-  triggers = {
-    code_hash = data.archive_file.agent_code.output_md5
-  }
+# NOTE: AgentCore deployment is done manually via CLI, not through Terraform
+# See the README for deployment instructions:
+#   1. cd agent/
+#   2. export ROUTER_MODEL=us.amazon.nova-micro-v1:0
+#   3. export CHAT_MODEL=us.amazon.nova-lite-v1:0
+#   4. export PLANNING_MODEL=us.amazon.nova-pro-v1:0
+#   5. export VISION_MODEL=us.amazon.nova-pro-v1:0
+#   6. uv run agentcore configure --entrypoint src/main.py
+#   7. uv run agentcore launch --name n-agent-{env}
 
-  provisioner "local-exec" {
-    command = <<-EOT
-      cd ${path.root}/../../agent && \
-      export ROUTER_MODEL=${var.router_model} && \
-      export CHAT_MODEL=${var.chat_model} && \
-      export PLANNING_MODEL=${var.planning_model} && \
-      export VISION_MODEL=${var.vision_model} && \
-      export AWS_REGION=us-east-1 && \
-      uv run agentcore configure --entrypoint src/main.py && \
-      uv run agentcore launch --name ${var.project_name}-${var.environment}
-    EOT
-
-    environment = {
-      AWS_REGION = "us-east-1"
-    }
-  }
-}

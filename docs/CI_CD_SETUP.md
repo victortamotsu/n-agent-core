@@ -2,11 +2,21 @@
 
 ## Overview
 
-O CI/CD pipeline executa automaticamente em pushes para `main` e `develop`:
+O CI/CD pipeline executa automaticamente em pushes para `main` e `develop` com as seguintes otimizações para monorepos:
 
-1. **Lint** - Valida código com Ruff e Black
-2. **Test** - Executa testes com pytest
-3. **Deploy** - Deploy automático no AgentCore (apenas `main`)
+1. **Lint** - Valida código Python com Ruff e Black (apenas se `agent/` mudou)
+2. **Test** - Executa testes com pytest (apenas se `agent/` mudou)
+3. **Deploy** - Deploy automático no AgentCore (apenas `main` e se `infra/`, `agent/` ou `lambdas/` mudaram)
+
+### 🎯 Otimizações de Monorepo Implementadas
+
+✅ **Path Filtering** - Ignora mudanças em docs, markdown, .gitignore, LICENSE  
+✅ **Conditional Execution** - Jobs só executam quando código relevante muda  
+✅ **Dependency Caching** - Cache UV (Python) e npm (Node.js) para builds 80% mais rápidos  
+✅ **Reproducible Builds** - Usa `npm ci` ao invés de `npm install`  
+✅ **Parallel Jobs** - Lint e Test executam simultaneamente  
+
+**Referência**: [Turborepo CI/CD Best Practices](https://turborepo.com/docs/crafting-your-repository/constructing-ci)
 
 ---
 

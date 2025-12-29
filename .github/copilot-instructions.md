@@ -67,7 +67,42 @@ You are working on **n-agent**, an AI-powered personal travel assistant platform
 
 **Cost awareness is critical!** Always check pricing before suggesting services.
 
-### 3. AgentCore Memory Architecture
+### 3. Amazon Bedrock AgentCore Overview
+
+**What is AgentCore?**
+
+Amazon Bedrock AgentCore is an **agentic platform** for building, deploying, and operating AI agents securely at scale using any framework and foundation model. AgentCore services work together or independently with any open-source framework (CrewAI, LangGraph, LlamaIndex, Strands Agents) and any foundation model.
+
+**Core Services (9 Primitives):**
+
+1. **Runtime** - Serverless runtime for deploying and scaling AI agents with fast cold starts, extended runtime for async agents, true session isolation, and built-in identity.
+
+2. **Memory** - Build context-aware agents with short-term (multi-turn conversations) and long-term memory (persists across sessions). **$0 extra cost** - AWS-managed storage included in Runtime.
+
+3. **Gateway** - Convert APIs, Lambda functions, and services into MCP-compatible tools. Makes backend instantly accessible to agents without rewriting code.
+
+4. **Identity** - Secure agent identity, access and authentication management compatible with existing IdPs (Cognito, Okta, Azure Entra ID, Auth0).
+
+5. **Code Interpreter** - Isolated sandbox for agents to execute code (Python, JavaScript, TypeScript) to solve complex tasks.
+
+6. **Browser** - Cloud-based browser runtime for agents to interact with web apps, fill forms, navigate websites (Playwright, BrowserUse).
+
+7. **Observability** - Unified view to trace, debug, and monitor agent performance with OpenTelemetry-compatible format.
+
+8. **Evaluations** - Automated, data-driven agent assessment measuring task execution, edge cases, and output reliability.
+
+9. **Policy** - Deterministic control using natural language or Cedar to ensure agents operate within defined boundaries.
+
+**Common Use Cases:**
+- **Agents**: Autonomous AI apps for customer support, workflow automation, data analysis
+- **Tools/MCP Servers**: Transform existing APIs into agent-compatible tools
+- **Agent Platforms**: Provide internal developers with governed access to enterprise services
+
+**Pricing**: Consumption-based, no upfront commitments or minimum fees.
+
+**Reference**: `#file:docs/AGENTCORE_PRIMITIVES.md` for detailed implementation guidance.
+
+### 4. AgentCore Memory Architecture
 
 **CRITICAL: AgentCore Memory ≠ Knowledge Base**
 
@@ -349,6 +384,41 @@ pricing = await aws_pricing.get_pricing(
 5. **Update documentation:**
    - Update relevant docs in `docs/`
    - Add inline comments for complex logic
+
+### CI/CD Best Practices for Monorepo
+
+**Our Pipeline Optimizations:**
+
+✅ **Path Filtering** - Avoid unnecessary builds:
+```yaml
+on:
+  push:
+    paths-ignore:
+      - 'docs/**'
+      - '**.md'
+```
+
+✅ **Dependency Caching** - Speed up CI:
+```yaml
+- name: Cache UV dependencies
+  uses: actions/cache@v4
+  with:
+    path: |
+      ~/.cache/uv
+      agent/.venv
+    key: ${{ runner.os }}-uv-${{ hashFiles('agent/pyproject.toml') }}
+```
+
+✅ **Conditional Execution** - Run jobs only for affected code:
+```yaml
+if: contains(github.event.head_commit.modified, 'agent/') || github.event_name == 'pull_request'
+```
+
+✅ **Reproducible Builds** - Use `npm ci` instead of `npm install`
+
+✅ **Parallel Jobs** - Lint and Test run simultaneously
+
+**Reference**: Based on [Turborepo CI/CD best practices](https://turborepo.com/docs/crafting-your-repository/constructing-ci)
 
 ### Code Review Guidelines
 

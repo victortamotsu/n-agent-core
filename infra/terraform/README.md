@@ -1,7 +1,5 @@
 # 🚀 Quick Start - Terraform Deploy
 
-<!-- Test change to trigger deploy -->
-
 ## 1️⃣ Bootstrap Backend (only once)
 
 ```bash

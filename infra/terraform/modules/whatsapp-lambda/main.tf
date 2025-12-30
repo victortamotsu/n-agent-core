@@ -1,17 +1,16 @@
 # WhatsApp Lambda webhook module
 
-data "archive_file" "lambda_code" {
-  type        = "zip"
-  source_file = "${path.module}/../../../lambdas/whatsapp-webhook/dist/index.js"
-  output_path = "${path.module}/lambda-code.zip"
-}
+# Use the pre-built lambda code zip file
+# Note: The lambda code must be built before running terraform:
+#   cd lambdas/whatsapp-webhook && npm run build
+#   Then the zip file is generated and committed to the repo
 
 resource "aws_lambda_function" "whatsapp_webhook" {
-  filename         = data.archive_file.lambda_code.output_path
+  filename         = "${path.module}/lambda-code.zip"
   function_name    = "${var.project_name}-${var.environment}-whatsapp-webhook"
   role             = var.iam_role_arn
   handler          = "index.handler"
-  source_code_hash = data.archive_file.lambda_code.output_base64sha256
+  source_code_hash = filebase64sha256("${path.module}/lambda-code.zip")
   runtime          = "nodejs20.x"
   timeout          = 30
   memory_size      = 256

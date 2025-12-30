@@ -1,0 +1,37 @@
+# Dependencies
+**/node_modules/
+**/.venv/
+**/.env.local
+**/.env.*.local
+
+# Build outputs (but keep lambda dist for terraform)
+agent/dist/
+agent/build/
+*.egg-info/
+__pycache__/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Terraform
+**/.terraform/
+**/*.tfstate
+**/*.tfstate.*
+**/*.tfvars
+!**/*terraform.tfvars.example
+
+# Python
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Logs
+*.log
+npm-debug.log*

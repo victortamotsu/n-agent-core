@@ -2,7 +2,7 @@
 
 data "archive_file" "lambda_code" {
   type        = "zip"
-  source_file = "${path.root}/../../lambdas/whatsapp-webhook/dist/index.js"
+  source_file = "${path.module}/../../../lambdas/whatsapp-webhook/dist/index.js"
   output_path = "${path.module}/lambda-code.zip"
 }
 

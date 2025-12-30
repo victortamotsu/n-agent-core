@@ -1,5 +1,4 @@
 # Variables file - Production environment
-# Prod environment uses the same base variables with production defaults
 
 variable "aws_region" {
   description = "AWS region for all resources"

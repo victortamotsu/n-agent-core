@@ -215,22 +215,24 @@ Para realizar estas capacidades, temos que entregar as seguintes ferramentas par
 Para garantir viabilidade financeira e time-to-market adequado, o MVP terá escopo reduzido:
 
 **Integrações Core (obrigatórias):**
-- ✅ WhatsApp Business API (interface principal)
+- ✅ WhatsApp Business API
 - ✅ Google Maps Platform (Places + Directions)
-- ✅ Booking.com Affiliate API (hospedagem)
-- ✅ Airbnb API (hospedagem alternativa)
+- ✅ Booking.com Affiliate API (hospedagem altenativa e atrações)
+- ✅ Airbnb (hospedagem principal)
 - ✅ AviationStack API (dados de voos e aeroportos em tempo real)
 - ✅ OpenWeather API (clima básico)
 - ✅ Gemini 2.0 Flash + Google Search Grounding (IA com busca web atualizada)
+- Google Calendar (sincronização de agenda)
 
 **Integrações Fase 2 (pós-validação - 3 meses após MVP):**
 - Skyscanner/Amadeus (busca de voos para compra)
-- Google Calendar (sincronização de agenda)
+- Google Flight
 - Open Exchange Rates (câmbio em tempo real)
 - DeepL/Google Translate (tradução)
+- Car rental (aluguel de carros)
 
 **Integrações Fase 3 (escala - 6+ meses):**
-- Airbnb, TripAdvisor, tradução, OCR de documentos
+- TripAdvisor, tradução, OCR de documentos
 
 ### Funcionalidades do MVP
 
@@ -243,7 +245,7 @@ Para garantir viabilidade financeira e time-to-market adequado, o MVP terá esco
 | Fase Contratação | ❌ (links apenas) | ✅ (parcial) | ✅ |
 | Fase Concierge | ❌ | ✅ (básico) | ✅ |
 | Fase Memórias | ❌ | ❌ | ✅ |
-| Documentos Ricos | ✅ (PDF simples) | ✅ (interativo) | ✅ |
+| Documentos Ricos | ✅ (HTML interativo) | ✅ | ✅ |
 | Versionamento Roteiros | ❌ | ✅ | ✅ |
 | Multi-moeda | ❌ | ✅ | ✅ |
 | OCR Passaporte | ❌ | ❌ | ✅ |

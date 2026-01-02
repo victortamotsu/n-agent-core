@@ -28,25 +28,25 @@ jobs:
     name: Validate & Deploy Agent
     runs-on: ubuntu-latest
     
-    # Usar imagem com uv pré-instalado
-    # ghcr.io/astral-sh/uv:latest tem uv + Python
-    container:
-      image: ghcr.io/astral-sh/uv:latest
-    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
       
       - name: Install system dependencies
         run: |
-          apt-get update
-          apt-get install -y zip unzip curl jq
+          sudo apt-get update
+          sudo apt-get install -y zip unzip curl jq
+      
+      - name: Install uv
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          echo "$HOME/.cargo/bin" >> $GITHUB_PATH
       
       - name: Install AWS CLI
         run: |
           curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
           unzip -q awscliv2.zip
-          ./aws/install
+          sudo ./aws/install
           aws --version
       
       - name: Configure AWS Credentials

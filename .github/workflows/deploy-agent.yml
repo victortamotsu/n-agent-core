@@ -32,7 +32,6 @@ jobs:
     # ghcr.io/astral-sh/uv:latest tem uv + Python
     container:
       image: ghcr.io/astral-sh/uv:latest
-      options: --user root
     
     steps:
       - name: Checkout code

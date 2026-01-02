@@ -130,9 +130,7 @@ def invoke(payload: Dict[str, Any], context=None) -> Dict[str, Any]:
         trip_context={"trip_id": trip_id} if trip_id else None,
     )
 
-    print(
-        f"🔀 Router: {routing_config['complexity']} → {routing_config['model_id']}"
-    )
+    print(f"🔀 Router: {routing_config['complexity']} → {routing_config['model_id']}")
 
     # 2. MEMORY: Recuperar contexto da conversa (se configurado)
     memory_context = ""

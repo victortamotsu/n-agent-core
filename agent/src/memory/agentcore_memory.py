@@ -18,7 +18,7 @@ from bedrock_agentcore.memory import MemoryClient
 
 class AgentCoreMemory:
     """Wrapper for AgentCore Memory with session management.
-    
+
     Uses the simplified tuple-based API from AgentCore SDK.
     """
 
@@ -130,12 +130,14 @@ class AgentCoreMemory:
             if isinstance(turn, list):
                 for msg in turn:
                     if isinstance(msg, dict):
-                        memories.append({
-                            "content": msg.get("content", ""),
-                            "timestamp": msg.get("timestamp"),
-                            "role": msg.get("role", ""),
-                            "score": 1.0,  # get_last_k_turns doesn't have relevance scores
-                        })
+                        memories.append(
+                            {
+                                "content": msg.get("content", ""),
+                                "timestamp": msg.get("timestamp"),
+                                "role": msg.get("role", ""),
+                                "score": 1.0,  # get_last_k_turns doesn't have relevance scores
+                            }
+                        )
         return memories
 
     def get_session_summary(self, actor_id: str, session_id: str) -> Optional[str]:
@@ -169,7 +171,11 @@ class AgentCoreMemory:
             memories = response if isinstance(response, list) else []
             if memories:
                 first = memories[0]
-                return first.get("content") if isinstance(first, dict) else getattr(first, "content", None)
+                return (
+                    first.get("content")
+                    if isinstance(first, dict)
+                    else getattr(first, "content", None)
+                )
         except Exception:
             # Summary strategy may not be configured
             pass
@@ -209,7 +215,7 @@ class AgentCoreMemory:
         if memories:
             context_parts.append("# Relevant Previous Context")
             for i, mem in enumerate(memories, 1):
-                score = mem.get('score', 0.0)
+                score = mem.get("score", 0.0)
                 context_parts.append(
                     f"{i}. [{mem['role']}] {mem['content']} "
                     f"(relevance: {score:.2f})"
@@ -238,7 +244,9 @@ def create_memory_if_not_exists(
     # Check if memory already exists
     try:
         memories = client.list_memories()
-        existing = [m for m in memories.get("memories", []) if m.get("name") == memory_name]
+        existing = [
+            m for m in memories.get("memories", []) if m.get("name") == memory_name
+        ]
         if existing:
             memory_id = existing[0].get("id")
             print(f"✅ Using existing memory: {memory_id}")

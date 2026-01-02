@@ -264,8 +264,10 @@ CLASSIFICAÇÃO (responda apenas UMA palavra):
         # 3. Configurações específicas do agente
         # use_memory=True sempre, exceto para emojis puros (trivial com len<5)
         # Isso permite que o agente lembre contexto mesmo em queries simples
-        use_memory = len(user_message.strip()) >= 5 or complexity != QueryComplexity.TRIVIAL
-        
+        use_memory = (
+            len(user_message.strip()) >= 5 or complexity != QueryComplexity.TRIVIAL
+        )
+
         config = {
             "model_id": model_config["id"],
             "complexity": complexity.value,

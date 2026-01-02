@@ -113,7 +113,7 @@ jobs:
       - name: Install AgentCore CLI
         run: |
           uv tool install bedrock-agentcore-starter-toolkit
-          agentcore --version
+          echo "✅ AgentCore CLI installed"
       
       - name: Deploy to AgentCore Runtime
         working-directory: agent

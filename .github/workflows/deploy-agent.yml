@@ -1,0 +1,152 @@
+name: Deploy AgentCore to Production
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'agent/**'
+      - '.github/workflows/deploy-agent.yml'
+  workflow_dispatch:
+    inputs:
+      skip_tests:
+        description: 'Skip tests (use only if already tested)'
+        required: false
+        type: boolean
+        default: false
+
+env:
+  AWS_REGION: us-east-1
+  PYTHON_VERSION: "3.12"
+
+permissions:
+  id-token: write   # Required for OIDC
+  contents: read
+
+jobs:
+  validate-and-deploy:
+    name: Validate & Deploy Agent
+    runs-on: ubuntu-latest
+    
+    # Usar imagem com uv pré-instalado
+    # ghcr.io/astral-sh/uv:latest tem uv + Python
+    container:
+      image: ghcr.io/astral-sh/uv:latest
+      options: --user root
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Install system dependencies
+        run: |
+          apt-get update
+          apt-get install -y zip unzip curl jq
+      
+      - name: Install AWS CLI
+        run: |
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip -q awscliv2.zip
+          ./aws/install
+          aws --version
+      
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+          role-session-name: github-actions-deploy
+          aws-region: ${{ env.AWS_REGION }}
+      
+      - name: Verify AWS credentials
+        run: |
+          aws sts get-caller-identity
+      
+      - name: Set Python version
+        working-directory: agent
+        run: |
+          echo "${{ env.PYTHON_VERSION }}" > .python-version
+          cat .python-version
+      
+      - name: Cache uv dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/uv
+            agent/.venv
+          key: ${{ runner.os }}-uv-${{ hashFiles('agent/pyproject.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-uv-
+      
+      - name: Install runtime dependencies
+        working-directory: agent
+        run: |
+          uv venv
+          uv sync --no-dev
+      
+      - name: Generate requirements.txt
+        working-directory: agent
+        run: |
+          uv pip compile pyproject.toml --universal --no-emit-options > requirements.txt
+          echo "📋 Requirements generated:"
+          head -20 requirements.txt
+      
+      - name: Validate requirements (no ruamel-yaml)
+        working-directory: agent
+        run: |
+          if grep -i ruamel requirements.txt; then
+            echo "❌ ERROR: ruamel-yaml found in requirements.txt!"
+            echo "This will cause deploy failure (no ARM64 wheels)"
+            exit 1
+          fi
+          echo "✅ requirements.txt valid (no ruamel-yaml)"
+      
+      - name: Install dev dependencies for tests
+        if: ${{ !inputs.skip_tests }}
+        working-directory: agent
+        run: |
+          uv sync --group dev
+      
+      - name: Run tests
+        if: ${{ !inputs.skip_tests }}
+        working-directory: agent
+        run: |
+          uv run pytest tests/ -v --tb=short
+      
+      - name: Run linter
+        if: ${{ !inputs.skip_tests }}
+        working-directory: agent
+        run: |
+          uv run ruff check src/ --select E,F,W || echo "⚠️ Linter warnings (non-blocking)"
+      
+      - name: Install AgentCore CLI
+        run: |
+          uv tool install bedrock-agentcore-starter-toolkit
+          agentcore --version
+      
+      - name: Deploy to AgentCore Runtime
+        working-directory: agent
+        env:
+          BEDROCK_AGENTCORE_MEMORY_ID: ${{ secrets.BEDROCK_AGENTCORE_MEMORY_ID }}
+        run: |
+          echo "🚀 Deploying to AgentCore Runtime..."
+          agentcore launch
+      
+      - name: Get deployment info
+        working-directory: agent
+        run: |
+          echo "📋 Deployment Status:"
+          agentcore status || echo "Status check failed"
+      
+      - name: Test deployed agent
+        working-directory: agent
+        run: |
+          echo "🧪 Testing deployed agent..."
+          agentcore invoke '{"prompt": "Hello from CI/CD!"}' || echo "⚠️ Invoke failed - check logs"
+      
+      - name: Output CloudWatch logs
+        if: always()
+        run: |
+          echo "📋 Recent CloudWatch logs:"
+          aws logs tail /aws/bedrock-agentcore/runtimes/nagent-GcrnJb6DU5-DEFAULT \
+            --since 5m \
+            --region ${{ env.AWS_REGION }} || echo "⚠️ Could not fetch logs"

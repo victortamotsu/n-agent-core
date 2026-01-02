@@ -262,12 +262,16 @@ CLASSIFICAÇÃO (responda apenas UMA palavra):
         model_config = self.get_model_for_complexity(complexity)
 
         # 3. Configurações específicas do agente
+        # use_memory=True sempre, exceto para emojis puros (trivial com len<5)
+        # Isso permite que o agente lembre contexto mesmo em queries simples
+        use_memory = len(user_message.strip()) >= 5 or complexity != QueryComplexity.TRIVIAL
+        
         config = {
             "model_id": model_config["id"],
             "complexity": complexity.value,
             "use_tools": complexity
             in [QueryComplexity.COMPLEX, QueryComplexity.CRITICAL],
-            "use_memory": complexity != QueryComplexity.TRIVIAL,
+            "use_memory": use_memory,
             "enable_cache": True,  # Prompt caching habilitado
             "cost_input_per_1m": model_config["cost_input"],
             "cost_output_per_1m": model_config["cost_output"],

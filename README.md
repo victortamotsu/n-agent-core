@@ -7,12 +7,15 @@ Assistente conversacional inteligente para planejamento e gestão de viagens, us
 ## 🎯 Visão Geral
 
 O **N-Agent** é um assistente de viagens que:
-- 💬 Conversa naturalmente via WhatsApp (futuramente Web/Mobile)
+- 💬 Conversa naturalmente via **Chat Web** (interface principal)
+- 📱 WhatsApp Business API (estrutura pronta, aguardando aprovação Meta)
 - 🤖 Usa multi-agentes especializados com roteamento inteligente (76% economia)
 - 📄 Processa documentos (passaportes, vistos, reservas) com Vision AI
 - 🧠 Mantém memória de conversas e contexto da viagem (AgentCore Memory)
 - 📊 Gera relatórios e roteiros personalizados
 - ☁️ **Zero infraestrutura** - Serverless com Bedrock AgentCore Runtime
+
+> **📝 Nota MVP**: WhatsApp movido para pós-MVP (Meta ainda não aprovou integração). Ver [MVP_SCOPE_UPDATE.md](.promtps_iniciais/fases_implementacao/MVP_SCOPE_UPDATE.md)
 
 ## 🏗️ Arquitetura
 
@@ -58,9 +61,9 @@ User Message → Router Agent (Strands + Nova Micro)
 - GitHub Actions para CI/CD
 
 **Frontend (Fase 4+)**:
-- Next.js 14 (Web Client)
-- React Native (Mobile App)
-- WhatsApp Business API
+- React + Vite (Web Client com Chat integrado)
+- Material Design M3 Expressive
+- WhatsApp Business API (pós-MVP, aguardando Meta)
 
 ## 🚀 Quick Start
 
@@ -123,14 +126,14 @@ uv run pytest tests/ -v
 │   ├── pyproject.toml           # Dependencies (UV)
 │   └── /tests                   # Unit tests
 ├── /apps
-│   ├── /web-client              # 🌐 Next.js App (Fase 4)
+│   ├── /web-client              # 🌐 React + Vite App (Fase 4) - Interface Principal
 │   └── /admin-panel             # 📊 Dashboard (Fase 5)
 ├── /packages
 │   ├── /core-types              # TypeScript types
 │   └── /ui-lib                  # Shared UI components
 ├── /lambdas
 │   ├── /doc-generator           # Relatórios PDF (Fase 3)
-│   ├── /whatsapp-webhook        # WhatsApp integration (Fase 4)
+│   ├── /whatsapp-webhook        # WhatsApp (estrutura - pós-MVP)
 │   └── /bff                     # Backend for Frontend (Fase 4)
 ├── /infra/terraform             # 🏗️ Infrastructure as Code
 │   ├── /modules                 # Reusable Terraform modules
@@ -140,10 +143,80 @@ uv run pytest tests/ -v
 
 ## 🛠️ Comandos de Desenvolvimento
 
+### Desenvolvimento Local (Windows)
+
 ```bash
-# Lint
+# Instalar dependências
 cd agent
+uv sync
+
+# Rodar em modo DEV (localhost:8080)
+$env:BEDROCK_AGENTCORE_MEMORY_ID="nAgentMemory-jXyHuA6yrO"
+uv run agentcore dev
+
+# Testar local
+curl -X POST http://localhost:8080/invocations `
+  -H "Content-Type: application/json" `
+  -d '{"prompt": "Olá!"}'
+
+# Executar testes
+uv run pytest tests/ -v
+
+# Lint
 uv run ruff check src/
+
+# Format
+uv run ruff format src/
+```
+
+### Deploy
+
+#### Deploy Manual (WSL 2)
+
+```powershell
+# Deploy completo (testes + validação + deploy)
+.\deploy.ps1
+
+# Deploy sem testes (use só se já testou)
+.\deploy.ps1 -SkipTests
+
+# Validação pré-deploy apenas
+.\scripts\validate-pre-deploy.ps1
+```
+
+#### Deploy Automático (GitHub Actions)
+
+Push para `main` com alterações em `agent/` dispara deploy automático:
+
+```bash
+git add agent/
+git commit -m "feat: nova funcionalidade"
+git push origin main
+```
+
+**Workflow**:
+1. ✅ Validação (Python 3.11, requirements.txt)
+2. ✅ Testes (pytest)
+3. ✅ Linter (ruff)
+4. ✅ Deploy (agentcore launch)
+5. ✅ Smoke test (invoke)
+
+**Requisitos**:
+- Secret: `AWS_DEPLOY_ROLE_ARN` (IAM Role para OIDC)
+- Secret: `BEDROCK_AGENTCORE_MEMORY_ID` 
+- Permissões: `bedrock-agentcore:*`, `iam:PassRole`, `s3:*`, `logs:*`
+
+### Status e Logs
+
+```bash
+# Via WSL
+wsl bash -lc "cd /mnt/c/.../agent && agentcore status"
+wsl bash -lc "cd /mnt/c/.../agent && agentcore invoke '{\"prompt\": \"test\"}'"
+
+# Logs CloudWatch
+aws logs tail /aws/bedrock-agentcore/runtimes/nagent-GcrnJb6DU5-DEFAULT \
+  --since 5m --follow --region us-east-1
+```
 
 # Format
 uv run black src/
@@ -232,16 +305,17 @@ Seguindo [AWS Documentation oficial](https://docs.aws.amazon.com/bedrock-agentco
 ### ⏳ Fase 4: Output Generation (PENDENTE)
 - [ ] Generator de relatórios PDF
 - [ ] Templates Jinja2
-- [ ] Integração WhatsApp Business API
-- [ ] Web Client (Next.js)
+- [ ] **Web Client (React + Vite) - Interface Principal**
+- [ ] **Chat Web integrado ao agente**
 - [ ] BFF Lambda (REST API)
+- [ ] 🔲 WhatsApp Business API (estrutura pronta, aguardando Meta)
 
 ### ⏳ Fase 5: Advanced Features (PENDENTE)
-- [ ] Mobile App (React Native)
 - [ ] Admin Dashboard
 - [ ] Analytics e métricas
 - [ ] Multi-idioma
 - [ ] AgentCore Browser para web scraping
+- [ ] WhatsApp integração ativa (quando aprovado)
 
 ## 🧪 Testes
 

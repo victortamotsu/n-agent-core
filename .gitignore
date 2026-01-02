@@ -31,7 +31,24 @@ Thumbs.db
 .pytest_cache/
 .coverage
 htmlcov/
+*.pyc
+*.pyo
+*.pyd
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+.tox/
+.hypothesis/
+.mypy_cache/
+.dmypy.json
+dmypy.json
 
 # Logs
 *.log
 npm-debug.log*
+
+# AgentCore
+agent/.bedrock_agentcore_cache/
+agent/deployment.zip
+agent/dependencies.zip
+agent/requirements.txt

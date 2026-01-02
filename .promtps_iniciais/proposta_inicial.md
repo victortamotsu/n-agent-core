@@ -61,7 +61,9 @@ Os usuários poderão receber respostas da IA no formato de relatórios com cont
 
 ### Interação padrão do usuário
 
-Os inputs do usuário se dará exclusivamente via chat com a IA "n-agent" e via interface web para pequenas rotinas (como finalização de itens em listas de tarefas). O chat se dará em duas interfaces: chat via Whatsapp e chat via interface web, no site. Ambas interfaces devem suportar os seguintes tipos de input:
+Os inputs do usuário se dará exclusivamente via chat com a IA "n-agent" e via interface web para pequenas rotinas (como finalização de itens em listas de tarefas). O chat se dará em duas interfaces: **chat via interface web** (MVP) e chat via WhatsApp (pós-MVP, aguardando aprovação Meta). Ambas interfaces devem suportar os seguintes tipos de input:
+
+> **📝 Nota MVP**: A integração com WhatsApp foi movida para pós-MVP pois a Meta ainda não liberou o acesso à API. Ver [MVP_SCOPE_UPDATE.md](./fases_implementacao/MVP_SCOPE_UPDATE.md)
     
 - texto (o mais comum, com suporte a emoticons, links e formatação MD)
 - imagens 
@@ -128,7 +130,7 @@ Para realizar estas capacidades, temos que entregar as seguintes ferramentas par
 - Toda a plataforma deve ser definida com IaC e infraestrutura 100% AWS, com a maior quantidade de serviços serverless
 - Vamos usar uma estrutura de microserviços Lambda + Bedrock Agents para tornar o ambiente pay as you Go, com foco em otimização de custos vs vantagens das soluções implementadas
 - Banco de dados DynamoDB, com modelagem a seu critério
-- [Sugestão] Cache Strategy (ElastiCache/Redis): Para evitar custos excessivos de LLM e APIs de terceiros em perguntas repetidas (ex: "Qual meu voo?").
+- ~~[Sugestão] Cache Strategy (ElastiCache/Redis)~~: **REMOVIDO** - AgentCore Memory já implementa caching de sessões nativamente. Ver [MVP_SCOPE_UPDATE.md](./fases_implementacao/MVP_SCOPE_UPDATE.md)
 - Backend em node, com frontend em React
 - Interface visual respeitando o Material Design M3 Expressive
 - BFF para controle e orquestração das informações
@@ -210,12 +212,15 @@ Para realizar estas capacidades, temos que entregar as seguintes ferramentas par
 
 ## Informações sobre o MVP
 
+> **⚠️ ATUALIZAÇÃO DE ESCOPO**: Consulte [MVP_SCOPE_UPDATE.md](./fases_implementacao/MVP_SCOPE_UPDATE.md) para alterações recentes.
+
 ### Escopo Reduzido para MVP (Fase 1 - 3 meses)
 
 Para garantir viabilidade financeira e time-to-market adequado, o MVP terá escopo reduzido:
 
 **Integrações Core (obrigatórias):**
-- ✅ WhatsApp Business API
+- 🔲 WhatsApp Business API *(estrutura apenas - aguardando aprovação Meta)*
+- ✅ **Chat Web** *(interface principal do MVP)*
 - ✅ Google Maps Platform (Places + Directions)
 - ✅ Booking.com Affiliate API (hospedagem altenativa e atrações)
 - ✅ Airbnb (hospedagem principal)
@@ -225,6 +230,7 @@ Para garantir viabilidade financeira e time-to-market adequado, o MVP terá esco
 - Google Calendar (sincronização de agenda)
 
 **Integrações Fase 2 (pós-validação - 3 meses após MVP):**
+- **WhatsApp Business API** *(quando aprovado pela Meta)*
 - Skyscanner/Amadeus (busca de voos para compra)
 - Google Flight
 - Open Exchange Rates (câmbio em tempo real)
@@ -238,8 +244,8 @@ Para garantir viabilidade financeira e time-to-market adequado, o MVP terá esco
 
 | Funcionalidade | MVP | Fase 2 | Fase 3 |
 |----------------|-----|--------|--------|
-| Chat WhatsApp | ✅ | ✅ | ✅ |
 | Chat Web | ✅ | ✅ | ✅ |
+| Chat WhatsApp | 🔲 estrutura | ✅ | ✅ |
 | Fase Conhecimento | ✅ | ✅ | ✅ |
 | Fase Planejamento | ✅ (básico) | ✅ (completo) | ✅ |
 | Fase Contratação | ❌ (links apenas) | ✅ (parcial) | ✅ |

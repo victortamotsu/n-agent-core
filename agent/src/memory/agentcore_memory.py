@@ -130,9 +130,14 @@ class AgentCoreMemory:
             if isinstance(turn, list):
                 for msg in turn:
                     if isinstance(msg, dict):
+                        # Extract content - can be dict with 'text' key or direct string
+                        content = msg.get("content", "")
+                        if isinstance(content, dict):
+                            content = content.get("text", str(content))
+                        
                         memories.append(
                             {
-                                "content": msg.get("content", ""),
+                                "content": content,
                                 "timestamp": msg.get("timestamp"),
                                 "role": msg.get("role", ""),
                                 "score": 1.0,  # get_last_k_turns doesn't have relevance scores
@@ -216,8 +221,12 @@ class AgentCoreMemory:
             context_parts.append("# Relevant Previous Context")
             for i, mem in enumerate(memories, 1):
                 score = mem.get("score", 0.0)
+                # Extract text from content (can be dict with 'text' key or string)
+                content = mem.get('content', '')
+                if isinstance(content, dict):
+                    content = content.get('text', str(content))
                 context_parts.append(
-                    f"{i}. [{mem['role']}] {mem['content']} "
+                    f"{i}. [{mem['role']}] {content} "
                     f"(relevance: {score:.2f})"
                 )
 

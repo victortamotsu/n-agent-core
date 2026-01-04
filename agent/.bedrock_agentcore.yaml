@@ -2,7 +2,7 @@ default_agent: nagent
 agents:
   nagent:
     name: nagent
-    entrypoint: src/main.py
+    entrypoint: main:app
     deployment_type: direct_code_deploy
     runtime_type: PYTHON_3_12
     platform: linux/amd64
@@ -23,14 +23,14 @@ agents:
       protocol_configuration:
         server_protocol: HTTP
       observability:
-        enabled: true
+        enabled: false
       lifecycle_configuration:
         idle_runtime_session_timeout: 1800
         max_lifetime: 3600
     bedrock_agentcore:
       agent_id: nagent-GcrnJb6DU5
       agent_arn: arn:aws:bedrock-agentcore:us-east-1:944938120078:runtime/nagent-GcrnJb6DU5
-      agent_session_id: 6ab45a92-6c0e-4ef0-81fd-0870be07534b
+      agent_session_id: null
     codebuild:
       project_name: null
       execution_role: null

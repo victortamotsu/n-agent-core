@@ -79,14 +79,17 @@ cd agent
 # Install dependencies
 uv sync
 
-# Run DEV mode (localhost:8080)
+# Run DEV mode (localhost:8080) - NÃO usar isBackground, usar Start-Process
+cd agent
 $env:BEDROCK_AGENTCORE_MEMORY_ID="nAgentMemory-jXyHuA6yrO"
-uv run agentcore dev
+Start-Process -NoNewWindow -FilePath "powershell" -ArgumentList "-NoExit", "-Command", "cd 'C:\Users\victo\Projetos\n-agent-core\agent'; `$env:BEDROCK_AGENTCORE_MEMORY_ID='nAgentMemory-jXyHuA6yrO'; uv run agentcore dev"
 
-# Test
-curl -X POST http://localhost:8080/invocations `
-  -H "Content-Type: application/json" `
-  -d '{"prompt": "test"}'
+# Aguardar servidor iniciar (8 segundos)
+Start-Sleep -Seconds 8
+
+# Test (PowerShell syntax)
+$payload = Get-Content -Path "test_payload.json" -Raw
+Invoke-RestMethod -Uri "http://localhost:8080/invocations" -Method Post -Body $payload -ContentType "application/json"
 
 # Unit tests
 uv run pytest tests/ -v

@@ -10,6 +10,27 @@ O objetivo é apoiar pessoas normais a entender, estruturar, organizar a viagem.
 
 ---
 
+# Glossário e Definições
+
+## Entidades Principais
+
+| Termo | Definição |
+|-------|-----------|
+| **Viagem** | Um evento de viagem com datas de início, fim, destinos, calendário, documentos, etc. Uma viagem pode ter uma ou mais pessoas que fazem parte dela (os participantes). Uma viagem deve ser criada e estar sempre vinculada a uma conta de usuário pagante. |
+| **Participante da Viagem** | Pessoas que fazem parte de uma viagem. Não precisam necessariamente ter uma conta de usuário; podem ser pessoas indicadas pelo administrador da viagem que ainda não possuem uma conta, sendo identificadas unicamente no sistema para posteriormente terem uma conta vinculada. |
+| **Pessoa** | Representa uma pessoa física. Este objeto serve para ligar uma menção de uma pessoa a uma atividade ou a uma viagem. Uma pessoa pode ou não ter uma conta de usuário vinculada no sistema. Exemplo: Victor é a pessoa com uma conta de usuário pagante que criou a viagem e registrou a Fabiola e o Vicenzo como pessoas que vão participar da viagem. Vicenzo tem uma conta de usuário vinculada pelo e-mail, enquanto Fabiola não existe no sistema ainda e pode ser convidada por e-mail ou por link compartilhado. |
+| **Conta de Usuário** | Uma conta do sistema vinculada a uma pessoa, em uma relação 1:1. A conta de usuário possui acesso à interface web e dá a possibilidade de contratar serviços dentro da plataforma. A conta de usuário é de fato um usuário com e-mail e/ou WhatsApp vinculado e validado. |
+| **Conta Pagante** | Uma conta de usuário que contratou um dos planos pagos da plataforma. Para se transformar em conta pagante, é necessário finalizar o cadastro do usuário com endereço, CPF, cartão de crédito. |
+
+## Perfis e Contexto
+
+| Termo | Definição |
+|-------|-----------|
+| **Perfil de Pessoa** | Dados relacionados a uma pessoa. O perfil são informações dadas por usuários de uma viagem e persistidas no banco de dados pelo agente de IA para tomar decisões e informar opções e sugestões. Por exemplo: O usuário Victor comentou que a pessoa Fabiola tem 42 anos, que gosta de atrações culturais e que quer visitar a Catedral de Notre Dame durante a viagem. Estas informações devem ser compiladas pelo agente e armazenadas como parte do perfil de pessoa da Fabiola em seções diferentes (idade e gosto na seção de propriedades, vontade de visitar na seção correspondente à viagem). **Nota**: O informante precisa ser um usuário da mesma viagem para que as informações sejam consideradas válidas. |
+| **Perfil da Viagem** | Dados relacionados a uma viagem. O perfil são informações dadas pelos usuários e persistidas no banco de dados pelo agente de IA para a tomada de decisões e informar opções da viagem. Estas informações devem ser compiladas pelo agente e armazenadas como parte do perfil da viagem. |
+
+---
+
 # Modelo de Negócio e Monetização
 
 ## Planos e Pricing
@@ -123,6 +144,67 @@ Para realizar estas capacidades, temos que entregar as seguintes ferramentas par
     - [Nova Integração] Serviços de Tradução: Integração com DeepL ou Google Translate API para tradução automática de cardápios via foto ou negociações locais.
     - [Nova Integração] Clima e Alertas: APIs meteorológicas (ex: OpenWeather) para avisar sobre chuva e sugerir roteiros alternativos indoor automaticamente.
 
+---
+
+# Arquitetura Multi-Agent
+
+## Visão Geral
+
+O "agente" n-agent é na verdade uma **solução multi-agent**, com nós especializados e otimizados para tarefas específicas necessárias para a plataforma atender seus usuários.
+
+## Agentes Especializados
+
+| Agente | Responsabilidade | Modelo Sugerido |
+|--------|------------------|-----------------|
+| **Router Agent** | Classifica a intenção do usuário e roteia para o agente especializado | Nova Micro |
+| **Profile Agent** | Extrai e persiste informações de perfis de pessoa e viagem durante conversas | Nova Lite |
+| **Planner Agent** | Cria e otimiza roteiros de viagem | Nova Pro / Gemini |
+| **Search Agent** | Busca informações em tempo real (hospedagens, voos, atrações) | Gemini + Search |
+| **Concierge Agent** | Monitora viagens ativas e dispara alertas/lembretes | Nova Lite |
+| **Document Agent** | Gera documentos ricos (roteiros, vouchers, relatórios) | Claude 3.5 Sonnet |
+| **Vision Agent** | Processa imagens (OCR de passaportes, documentos) | Claude 3.5 Sonnet |
+
+## Ferramentas do Agente para Gestão de Perfis
+
+O agente deve ter as seguintes ferramentas para gerenciar o contexto e perfis:
+
+### Ferramentas de Leitura (Contexto)
+
+| Ferramenta | Descrição |
+|------------|-----------|
+| `get_trip_profile_summary` | Obtém um resumo compacto do perfil da viagem (destinos, datas, budget, status) |
+| `get_trip_profile_details` | Obtém dados detalhados da viagem (roteiro, reservas, documentos, tarefas) |
+| `get_person_profile_summary` | Obtém resumo do perfil de uma pessoa (preferências, restrições, documentos) |
+| `get_person_profile_details` | Obtém dados detalhados de uma pessoa participante da viagem |
+| `get_trip_participants` | Lista todos os participantes de uma viagem com seus papéis |
+| `get_conversation_context` | Obtém contexto recente da conversa para continuidade |
+
+### Ferramentas de Escrita (Persistência)
+
+| Ferramenta | Descrição |
+|------------|-----------|
+| `update_trip_profile` | Atualiza informações do perfil da viagem (destinos, datas, preferências) |
+| `update_person_profile` | Atualiza informações do perfil de uma pessoa (idade, preferências, restrições) |
+| `add_trip_preference` | Adiciona uma preferência ou objetivo à viagem |
+| `add_person_preference` | Adiciona uma preferência ou restrição a uma pessoa |
+| `add_trip_activity` | Adiciona uma atividade desejada ao perfil da viagem |
+| `link_person_to_trip` | Vincula uma pessoa como participante de uma viagem |
+
+### Fluxo de Extração e Persistência
+
+Durante a conversa, o agente deve:
+
+1. **Analisar** cada mensagem do usuário para identificar informações relevantes
+2. **Classificar** as informações em categorias:
+   - Dados de perfil de pessoa (idade, preferências, restrições)
+   - Dados de perfil de viagem (destinos, datas, budget, objetivos)
+   - Atividades e desejos específicos
+3. **Validar** se o informante tem permissão para adicionar dados (mesmo participante da viagem)
+4. **Persistir** as informações usando as ferramentas apropriadas
+5. **Confirmar** ao usuário que as informações foram registradas
+
+---
+
 # Requisitos técnicos
 
 ## Infraestrutura e arquitetura
@@ -146,6 +228,50 @@ Para realizar estas capacidades, temos que entregar as seguintes ferramentas par
 - Painel de controle para gestão do ambiente, usados pelos administradores
 - Painel de controle para terceiros, como fornecedores e parceiros
 - Para o painel de clientes, ter um sistema de documentos com formatação rica, como o Evernote, onde o conteúdo é apresentado em um sistemas de fichário, onde os documentos podem ser compartilhados ou acessíveis via link gerado pela IA
+
+## Painel de Administração (MVP)
+
+O painel de administração é uma interface web para gestão do ambiente, com acesso restrito aos administradores da plataforma. A plataforma deve suportar **múltiplos administradores**.
+
+### Funcionalidades do Painel Admin
+
+| Funcionalidade | Descrição | MVP |
+|----------------|-----------|-----|
+| **Gestão de Prompts** | Tela para definição e edição dos prompts dos agentes, com versionamento. Permite fazer melhorias nos prompts de forma controlada e auditada. | ✅ |
+| **Configuração de Integrações** | Lista de parâmetros de configuração de cada integração (API keys, endpoints, limites) para agilizar parametrização | ✅ |
+| **Gestão de Usuários Admin** | Capacidade de adicionar/remover administradores da plataforma | ✅ |
+| **Monitoramento** | Dashboard de métricas de uso, custos e erros | ✅ |
+| **Logs de Auditoria** | Histórico de alterações em configurações e prompts | ✅ |
+
+### Gestão de Prompts (Versionamento)
+
+Os prompts do agente devem ser guardados no DynamoDB, com a intenção de serem parametrizados via portal de administração:
+
+```typescript
+interface AgentPrompt {
+  promptId: string;           // Ex: "router-agent-system-prompt"
+  agentType: string;          // Ex: "ROUTER", "PLANNER", "PROFILE"
+  version: number;            // Versão incremental
+  content: string;            // Conteúdo do prompt
+  variables: string[];        // Variáveis substituíveis (ex: {{tripContext}})
+  isActive: boolean;          // Se esta versão está ativa
+  createdBy: string;          // Admin que criou
+  createdAt: string;          // Timestamp de criação
+  changelog: string;          // Descrição das mudanças
+}
+```
+
+### Configuração de Integrações
+
+| Integração | Parâmetros Configuráveis |
+|------------|--------------------------|
+| **Google Maps** | API Key, Limites de requisição, Cache TTL |
+| **Gemini** | API Key, Modelo, Temperature, Max Tokens |
+| **Bedrock** | Region, Model IDs, Max Tokens por agente |
+| **WhatsApp** | Phone Number ID, Access Token, Webhook Secret |
+| **Booking** | Affiliate ID, API Key |
+| **AviationStack** | API Key, Rate Limits |
+| **OpenWeather** | API Key, Unidades (metric/imperial) |
 
 
 ## Fluxos

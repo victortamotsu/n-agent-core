@@ -13,7 +13,8 @@ A arquitetura será baseada no padrão **Event-Driven** (Orientada a Eventos). O
 ### Camada de Orquestração (O "Cérebro")
 
 - **AWS Lambda (BFF - Backend for Frontend)**: Resolve as requisições do site.
-- **Amazon Bedrock Agents**: Onde o fluxo da conversa é gerenciado. O Agente decide qual ferramenta (Tool) chamar.
+- **Amazon Bedrock AgentCore Runtime**: Onde a solução multi-agent é hospedada. O Router Agent decide qual agente especializado chamar.
+- **Sistema Multi-Agent**: Arquitetura com agentes especializados (Router, Profile, Planner, Search, Concierge, Document, Vision) otimizados para suas tarefas específicas.
 - **Amazon EventBridge**: O "carteiro". Quando o usuário manda uma mensagem, um evento é disparado. Quando o Booking confirma um hotel, outro evento é disparado. Isso desacopla os serviços.
 
 ### Domínios de Serviços (Microsserviços via Lambda)
@@ -28,9 +29,11 @@ A arquitetura será baseada no padrão **Event-Driven** (Orientada a Eventos). O
 ### Camada de Dados
 
 **DynamoDB:**
-- Tabela `Users`
+- Tabela `Users` - Contas de usuário e pessoas
 - Tabela `Trips` (Single Table Design sugerido para relacionar Viagem ↔ Itens ↔ Membros)
-- Tabela `ChatHistory`
+- Tabela `ChatHistory` - Logs de conversa
+- Tabela `Profiles` - Perfis de pessoa e viagem (dados extraídos pelo agente)
+- Tabela `AgentConfig` - Prompts dos agentes e configurações de integrações
 
 **S3:** Armazenamento de fotos, documentos PDF gerados e assets do site.
 
@@ -51,12 +54,26 @@ Usando **Turborepo** ou **Nx**:
 │
 ├── /apps
 │   ├── /web-client       (React + Vite + Material UI)
-│   ├── /admin-panel      (React - Painel interno)
+│   ├── /admin-panel      (React - Painel de administração)
 │   └── /api-bff          (Node.js - Lambdas que atendem o front)
+│
+├── /agent                (Python - AgentCore Runtime)
+│   ├── /src
+│   │   ├── /router       (Router Agent)
+│   │   ├── /profile      (Profile Agent)
+│   │   ├── /planner      (Planner Agent)
+│   │   ├── /search       (Search Agent)
+│   │   ├── /concierge    (Concierge Agent)
+│   │   ├── /document     (Document Agent)
+│   │   ├── /vision       (Vision Agent)
+│   │   ├── /memory       (AgentCore Memory wrapper)
+│   │   ├── /tools        (Ferramentas compartilhadas)
+│   │   └── /prompts      (Templates de prompts)
+│   └── /tests
 │
 ├── /packages             (Bibliotecas compartilhadas)
 │   ├── /ui-lib           (Seus componentes de Design System M3)
-│   ├── /core-types       (Interfaces TS: IUser, ITrip, IBooking)
+│   ├── /core-types       (Interfaces TS: IUser, ITrip, IBooking, IPerson, IProfile)
 │   ├── /utils            (Formatadores de data, validações)
 │   └── /logger           (Padronização de logs para CloudWatch)
 │
@@ -137,11 +154,14 @@ Tempo de Integração: Médio (1 semana). A validação da conta Business no Fac
 
 ### Arquitetura Híbrida (Escolhida)
 
-```
-┌─────────────┐     ┌──────────────────┐     ┌──────────────────┐
-│ AWS Lambda  │────▶│  Vertex AI API   │────▶│  Gemini 2.0      │
-│ (Orquestrador)    │  (Google Cloud)  │     │  + Search        │
-└─────────────┘     └──────────────────┘     └──────────────────┘
+```mermaid
+graph LR
+    A[AWS Lambda<br/>Orquestrador] --> B[Vertex AI API<br/>Google Cloud]
+    B --> C[Gemini 2.0<br/>+ Search]
+    
+    style A fill:#FF9900,stroke:#232F3E,stroke-width:2px,color:#fff
+    style B fill:#4285F4,stroke:#1a73e8,stroke-width:2px,color:#fff
+    style C fill:#34A853,stroke:#0d652d,stroke-width:2px,color:#fff
 ```
 
 ### Quando usar Gemini vs Bedrock?
@@ -351,6 +371,177 @@ Rápido (2-3 dias)
 
 ---
 
+# 4.1. Arquitetura Multi-Agent
+
+## Visão Geral do Sistema Multi-Agent
+
+O n-agent utiliza uma arquitetura multi-agent onde cada agente é especializado em uma tarefa específica, otimizando custos e performance.
+
+```mermaid
+graph TD
+    USER[User Input] --> ROUTER[ROUTER AGENT<br/>Nova Micro<br/>Classifica intenção]
+    
+    ROUTER --> PROFILE[PROFILE AGENT<br/>Nova Lite]
+    ROUTER --> PLANNER[PLANNER AGENT<br/>Nova Pro]
+    ROUTER --> SEARCH[SEARCH AGENT<br/>Gemini + Search]
+    ROUTER --> CONCIERGE[CONCIERGE AGENT<br/>Nova Lite]
+    ROUTER --> DOCUMENT[DOCUMENT AGENT<br/>Claude 3.5 Sonnet]
+    ROUTER --> VISION[VISION AGENT<br/>Claude 3.5 Sonnet]
+    
+    PROFILE --> TOOLS[SHARED TOOLS & MEMORY<br/>AgentCore Memory | DynamoDB | Ferramentas de Perfil]
+    PLANNER --> TOOLS
+    SEARCH --> TOOLS
+    CONCIERGE --> TOOLS
+    DOCUMENT --> TOOLS
+    VISION --> TOOLS
+    
+    style USER fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    style ROUTER fill:#fff176,stroke:#f57f17,stroke-width:3px
+    style PROFILE fill:#a5d6a7,stroke:#2e7d32,stroke-width:2px
+    style PLANNER fill:#90caf9,stroke:#1565c0,stroke-width:2px
+    style SEARCH fill:#ce93d8,stroke:#6a1b9a,stroke-width:2px
+    style CONCIERGE fill:#ffab91,stroke:#bf360c,stroke-width:2px
+    style DOCUMENT fill:#80deea,stroke:#006064,stroke-width:2px
+    style VISION fill:#f48fb1,stroke:#880e4f,stroke-width:2px
+    style TOOLS fill:#e0e0e0,stroke:#424242,stroke-width:2px
+```
+
+## Agentes Especializados
+
+### 1. Router Agent (Classificador)
+
+**Modelo:** Nova Micro (mais barato, latência baixa)  
+**Responsabilidade:** Classificar a intenção do usuário e rotear para o agente apropriado.
+
+```python
+# Categorias de roteamento
+ROUTING_CATEGORIES = {
+    "PROFILE": "Extração/atualização de informações de perfil",
+    "PLANNING": "Criação ou modificação de roteiros",
+    "SEARCH": "Busca de hospedagens, voos, atrações",
+    "CONCIERGE": "Alertas, lembretes, suporte durante viagem",
+    "DOCUMENT": "Geração de documentos ricos",
+    "VISION": "Análise de imagens (OCR, validação)",
+    "CHAT": "Conversa casual ou dúvidas gerais"
+}
+```
+
+### 2. Profile Agent (Extrator de Perfis)
+
+**Modelo:** Nova Lite  
+**Responsabilidade:** Analisar mensagens e extrair/persistir informações de perfil.
+
+**Ferramentas disponíveis:**
+- `get_person_profile` / `update_person_profile`
+- `get_trip_profile` / `update_trip_profile`
+- `add_preference` / `add_restriction`
+- `link_person_to_trip`
+
+**Fluxo de extração:**
+1. Recebe mensagem do usuário
+2. Identifica entidades mencionadas (pessoas, lugares, datas)
+3. Classifica informações (preferência, restrição, objetivo)
+4. Valida permissão do informante
+5. Persiste usando ferramentas apropriadas
+6. Confirma ao usuário
+
+### 3. Planner Agent (Planejador de Roteiros)
+
+**Modelo:** Nova Pro / Gemini (para tarefas complexas)  
+**Responsabilidade:** Criar e otimizar roteiros de viagem.
+
+**Ferramentas disponíveis:**
+- `get_trip_profile_details`
+- `get_all_participants_profiles`
+- `create_itinerary`
+- `optimize_route`
+- `estimate_costs`
+- `compare_versions`
+
+### 4. Search Agent (Buscador)
+
+**Modelo:** Gemini 2.0 Flash + Google Search Grounding  
+**Responsabilidade:** Buscar informações em tempo real.
+
+**Ferramentas disponíveis:**
+- `search_hotels` (Booking, Airbnb)
+- `search_flights` (AviationStack)
+- `search_attractions` (Google Places)
+- `get_weather_forecast`
+- `get_exchange_rates`
+
+### 5. Concierge Agent (Assistente de Viagem)
+
+**Modelo:** Nova Lite  
+**Responsabilidade:** Monitorar viagens ativas e fornecer suporte.
+
+**Ferramentas disponíveis:**
+- `get_flight_status`
+- `check_weather_alerts`
+- `send_reminder`
+- `get_emergency_contacts`
+- `translate_text`
+
+### 6. Document Agent (Gerador de Documentos)
+
+**Modelo:** Claude 3.5 Sonnet (melhor para textos estruturados)  
+**Responsabilidade:** Gerar documentos ricos.
+
+**Ferramentas disponíveis:**
+- `generate_itinerary_html`
+- `generate_itinerary_pdf`
+- `generate_checklist`
+- `generate_voucher`
+- `generate_financial_report`
+
+### 7. Vision Agent (Processamento de Imagens)
+
+**Modelo:** Claude 3.5 Sonnet (melhor para visão)  
+**Responsabilidade:** Processar e analisar imagens.
+
+**Ferramentas disponíveis:**
+- `extract_passport_data` (OCR)
+- `extract_ticket_data`
+- `validate_document_photo`
+- `translate_menu_photo`
+
+## Fluxo de Comunicação Inter-Agentes
+
+```typescript
+interface AgentMessage {
+  fromAgent: string;
+  toAgent: string;
+  tripId: string;
+  userId: string;
+  sessionId: string;
+  payload: {
+    intent: string;
+    context: object;
+    data: any;
+  };
+  metadata: {
+    traceId: string;
+    timestamp: string;
+  };
+}
+```
+
+## Otimização de Custos
+
+| Agente | % Chamadas (estimado) | Custo/1M tokens | Impacto no Custo Total |
+|--------|----------------------|-----------------|------------------------|
+| Router | 100% | $0.035 (Nova Micro) | Baixo |
+| Profile | 30% | $0.06 (Nova Lite) | Baixo |
+| Search | 25% | $0.10 (Gemini Flash) | Médio |
+| Planner | 15% | $0.80 (Nova Pro) | Médio |
+| Concierge | 20% | $0.06 (Nova Lite) | Baixo |
+| Document | 5% | $3.00 (Claude) | Baixo (poucas chamadas) |
+| Vision | 5% | $3.00 (Claude) | Baixo (poucas chamadas) |
+
+**Resultado esperado:** ~76% de redução de custo comparado a usar apenas um modelo (ex: Claude) para todas as tarefas.
+
+---
+
 ## Parte 1: Modelagem do DynamoDB (NoSQL)
 
 Para a AWS e arquitetura Serverless, a melhor prática é usar o **Single Table Design** (ou uma variação híbrida) para a tabela principal de dados, otimizando a leitura rápida do painel, e uma tabela separada para o Histórico de Chat (devido ao alto volume de escrita).
@@ -399,7 +590,162 @@ Esta tabela guarda Usuários, Viagens, Itinerário e Reservas.
 
 Para carregar o painel da viagem, o backend faz uma única query: `Query(PK="TRIP#123")`. O DynamoDB retorna o cabeçalho da viagem, os participantes, os dias e os eventos em uma única chamada de rede, resultando em baixa latência.
 
-### Tabela 2: NAgentChatHistory (Logs de Conversa)
+### Tabela 2: NAgentProfiles (Perfis de Pessoa e Viagem)
+
+Esta tabela guarda os perfis extraídos pelo agente durante as conversas.
+
+- **Partition Key (PK):** String
+- **Sort Key (SK):** String
+
+#### Entidades de Perfil
+
+- **Perfil de Pessoa**
+  - PK: `PERSON#<personId>`
+  - SK: `PROFILE#GENERAL`
+  - Atributos: `nome`, `idade`, `preferencias` (JSON), `restricoes` (JSON), `documentos_status`, `updatedAt`, `updatedBy`
+
+- **Preferências de Pessoa por Viagem**
+  - PK: `PERSON#<personId>`
+  - SK: `TRIP#<tripId>#PREFS`
+  - Atributos: `atividades_desejadas` (array), `locais_interesse` (array), `restricoes_locais` (array)
+
+- **Perfil da Viagem**
+  - PK: `TRIP#<tripId>`
+  - SK: `PROFILE#GENERAL`
+  - Atributos: `objetivos` (JSON), `budget`, `estilo_viagem`, `preferencias_hospedagem`, `preferencias_transporte`
+
+- **Contexto Extraído da Viagem**
+  - PK: `TRIP#<tripId>`
+  - SK: `CONTEXT#<timestamp>`
+  - Atributos: `tipo` (DESTINATION/ACTIVITY/PREFERENCE), `valor`, `fonte_mensagem_id`, `confianca`
+
+#### Exemplo de Perfil de Pessoa
+
+```json
+{
+  "PK": "PERSON#person-456",
+  "SK": "PROFILE#GENERAL",
+  "nome": "Fabiola",
+  "idade": 42,
+  "preferencias": {
+    "tipos_atracao": ["cultural", "historico", "gastronomia"],
+    "ritmo_viagem": "moderado",
+    "horario_preferido": "manha"
+  },
+  "restricoes": {
+    "alimentares": ["vegetariana"],
+    "mobilidade": null,
+    "fobias": ["altura"]
+  },
+  "updatedAt": "2025-01-15T10:00:00Z",
+  "updatedBy": "USER#victor@email.com"
+}
+```
+
+#### Exemplo de Perfil de Viagem
+
+```json
+{
+  "PK": "TRIP#trip-123",
+  "SK": "PROFILE#GENERAL",
+  "objetivos": {
+    "principais": ["conhecer capitais europeias", "experiencias culturais"],
+    "secundarios": ["compras", "gastronomia local"]
+  },
+  "budget": {
+    "total": 15000,
+    "moeda": "EUR",
+    "flexibilidade": "media"
+  },
+  "estilo_viagem": "familia_com_criancas",
+  "preferencias_hospedagem": {
+    "tipo": ["airbnb", "hotel"],
+    "requisitos": ["2+ banheiros", "proximo_metro"],
+    "evitar": ["hostels"]
+  },
+  "preferencias_transporte": {
+    "principal": "transporte_publico",
+    "entre_cidades": ["trem", "aviao_curta_distancia"],
+    "local": ["metro", "uber"]
+  }
+}
+```
+
+### Tabela 3: NAgentConfig (Configurações e Prompts)
+
+Esta tabela guarda os prompts dos agentes e configurações de integrações, parametrizáveis via portal de administração.
+
+- **Partition Key (PK):** String
+- **Sort Key (SK):** String
+- **Global Secondary Index 1 (GSI1):** Para buscar por tipo e status
+  - **GSI1PK:** String
+  - **GSI1SK:** String
+
+#### Entidades de Configuração
+
+- **Prompt de Agente**
+  - PK: `PROMPT#<agentType>`
+  - SK: `VERSION#<version>`
+  - GSI1PK: `PROMPT#<agentType>`
+  - GSI1SK: `ACTIVE#<isActive>` (ex: `ACTIVE#true`)
+  - Atributos: `content`, `variables`, `createdBy`, `createdAt`, `changelog`
+
+- **Configuração de Integração**
+  - PK: `INTEGRATION#<integrationName>`
+  - SK: `CONFIG`
+  - Atributos: `apiKey` (encrypted reference to Secrets Manager), `endpoint`, `rateLimits`, `cacheTTL`, `enabled`
+
+- **Administrador da Plataforma**
+  - PK: `ADMIN#<email>`
+  - SK: `PROFILE`
+  - Atributos: `nome`, `permissions`, `createdAt`, `lastLogin`
+
+#### Exemplo de Prompt Versionado
+
+```json
+{
+  "PK": "PROMPT#ROUTER",
+  "SK": "VERSION#3",
+  "GSI1PK": "PROMPT#ROUTER",
+  "GSI1SK": "ACTIVE#true",
+  "agentType": "ROUTER",
+  "version": 3,
+  "content": "Você é o Router Agent do n-agent, um assistente de viagens...\n\nClassifique a mensagem do usuário em uma das categorias:\n- PROFILE: extração de informações pessoais ou da viagem\n- PLANNING: criação ou modificação de roteiros\n- SEARCH: busca de hospedagens, voos, atrações\n- CONCIERGE: alertas, lembretes, suporte durante viagem\n- DOCUMENT: geração de documentos\n- VISION: análise de imagens\n- CHAT: conversa casual\n\nContexto da viagem: {{tripContext}}\nPerfil do usuário: {{userProfile}}",
+  "variables": ["tripContext", "userProfile"],
+  "isActive": true,
+  "createdBy": "admin@n-agent.com",
+  "createdAt": "2025-01-15T10:00:00Z",
+  "changelog": "Adicionada categoria VISION para OCR de documentos"
+}
+```
+
+#### Exemplo de Configuração de Integração
+
+```json
+{
+  "PK": "INTEGRATION#GOOGLE_MAPS",
+  "SK": "CONFIG",
+  "name": "Google Maps Platform",
+  "apiKeyRef": "arn:aws:secretsmanager:us-east-1:123:secret:google-maps-api-key",
+  "endpoints": {
+    "places": "https://maps.googleapis.com/maps/api/place",
+    "directions": "https://maps.googleapis.com/maps/api/directions"
+  },
+  "rateLimits": {
+    "requestsPerSecond": 10,
+    "requestsPerDay": 5000
+  },
+  "cacheTTL": {
+    "places": 86400,
+    "directions": 3600
+  },
+  "enabled": true,
+  "updatedAt": "2025-01-15T10:00:00Z",
+  "updatedBy": "admin@n-agent.com"
+}
+```
+
+### Tabela 4: NAgentChatHistory (Logs de Conversa)
 
 Separada para permitir arquivamento (TTL) e escalabilidade independente.
 
@@ -598,18 +944,16 @@ O sistema de documentos é um diferencial do produto. Não vamos criar um "Googl
 
 ## Arquitetura de Documentos
 
-```
-┌─────────────────┐     ┌──────────────────┐     ┌─────────────────┐
-│  Bedrock Agent  │────▶│  Doc Generator   │────▶│    S3 Bucket    │
-│  (decide gerar) │     │  (Lambda + React │     │  (HTML estático │
-└─────────────────┘     │   SSR ou PDF)    │     │   ou JSON+meta) │
-                        └──────────────────┘     └─────────────────┘
-                                                          │
-                                                          ▼
-                                                 ┌─────────────────┐
-                                                 │   CloudFront    │
-                                                 │  (URL assinada) │
-                                                 └─────────────────┘
+```mermaid
+graph LR
+    A[Bedrock Agent<br/>decide gerar] --> B[Doc Generator<br/>Lambda + React SSR]
+    B --> C[S3 Bucket<br/>HTML/PDF]
+    C --> D[CloudFront<br/>URL assinada]
+    
+    style A fill:#FF9900,stroke:#232F3E,stroke-width:2px,color:#fff
+    style B fill:#FF9900,stroke:#232F3E,stroke-width:2px,color:#fff
+    style C fill:#569A31,stroke:#3c6e26,stroke-width:2px,color:#fff
+    style D fill:#8C4FFF,stroke:#5c2d91,stroke-width:2px,color:#fff
 ```
 
 ## Tipos de Documentos
@@ -709,26 +1053,33 @@ O frontend terá um componente de "diff visual" para comparar versões:
 
 ### Usuários com Conta (Owner/Admin)
 
-```
-┌─────────┐    ┌─────────────┐    ┌──────────────┐
-│  Login  │───▶│   Cognito   │───▶│  JWT Token   │
-│  (Web)  │    │  User Pool  │    │  (1h expiry) │
-└─────────┘    └─────────────┘    └──────────────┘
-                     │
-         ┌───────────┴───────────┐
-         ▼                       ▼
-   Email + Senha           OAuth (Google/Microsoft)
+```mermaid
+graph TD
+    A[Login Web] --> B[Cognito User Pool]
+    B --> C[JWT Token<br/>1h expiry]
+    
+    B --> D[Email + Senha]
+    B --> E[OAuth<br/>Google/Microsoft]
+    
+    style A fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    style B fill:#FF9900,stroke:#232F3E,stroke-width:2px,color:#fff
+    style C fill:#4caf50,stroke:#2e7d32,stroke-width:2px,color:#fff
+    style D fill:#90caf9,stroke:#1565c0,stroke-width:2px
+    style E fill:#ce93d8,stroke:#6a1b9a,stroke-width:2px
 ```
 
 ### Membros Convidados (Viewer/Editor)
 
 Para membros que não querem criar conta completa:
 
-```
-┌────────────┐    ┌─────────────┐    ┌──────────────┐
-│  Link com  │───▶│  Lambda     │───▶│  Session     │
-│  Token     │    │  Validator  │    │  Temporária  │
-└────────────┘    └─────────────┘    └──────────────┘
+```mermaid
+graph LR
+    A[Link com Token] --> B[Lambda Validator]
+    B --> C[Session Temporária]
+    
+    style A fill:#e1f5ff,stroke:#01579b,stroke-width:2px
+    style B fill:#FF9900,stroke:#232F3E,stroke-width:2px,color:#fff
+    style C fill:#4caf50,stroke:#2e7d32,stroke-width:2px,color:#fff
 ```
 
 - Token único gerado pelo Owner ao convidar
@@ -880,19 +1231,24 @@ const operationCosts = {
 
 ## Stack de Observabilidade
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                    CloudWatch                            │
-│  ┌─────────┐  ┌─────────┐  ┌─────────────┐              │
-│  │  Logs   │  │ Metrics │  │   Alarms    │              │
-│  └─────────┘  └─────────┘  └─────────────┘              │
-└─────────────────────────────────────────────────────────┘
-         │              │              │
-         ▼              ▼              ▼
-┌─────────────┐  ┌─────────────┐  ┌─────────────┐
-│  X-Ray      │  │  Dashboard  │  │    SNS      │
-│  (Traces)   │  │  (Grafana)  │  │  (Alertas)  │
-└─────────────┘  └─────────────┘  └─────────────┘
+```mermaid
+graph TD
+    CW[CloudWatch]
+    CW --> LOGS[Logs]
+    CW --> METRICS[Metrics]
+    CW --> ALARMS[Alarms]
+    
+    LOGS --> XRAY[X-Ray<br/>Traces]
+    METRICS --> DASH[Dashboard<br/>Grafana]
+    ALARMS --> SNS[SNS<br/>Alertas]
+    
+    style CW fill:#FF9900,stroke:#232F3E,stroke-width:3px,color:#fff
+    style LOGS fill:#FF9900,stroke:#232F3E,stroke-width:2px,color:#fff
+    style METRICS fill:#FF9900,stroke:#232F3E,stroke-width:2px,color:#fff
+    style ALARMS fill:#FF9900,stroke:#232F3E,stroke-width:2px,color:#fff
+    style XRAY fill:#945DF2,stroke:#5c2d91,stroke-width:2px,color:#fff
+    style DASH fill:#4caf50,stroke:#2e7d32,stroke-width:2px,color:#fff
+    style SNS fill:#d13212,stroke:#8b0000,stroke-width:2px,color:#fff
 ```
 
 ## Métricas Críticas
@@ -1006,27 +1362,22 @@ interface AuditLog {
 
 **Não implementaremos multi-region ativo/ativo ou ativo/standby no MVP.** Apenas backup automático em outra região.
 
-```
-    ┌─────────────────┐
-    │   us-east-1     │
-    │   (Production)  │
-    │                 │
-    │  ┌──────────┐   │
-    │  │ DynamoDB │   │
-    │  └────┬─────┘   │
-    └───────┼─────────┘
-            │
-            │ Daily Snapshot
-            │ (Automated)
-            ▼
-    ┌─────────────────┐
-    │  sa-east-1      │
-    │  (Backup Only)  │
-    │                 │
-    │  ┌──────────┐   │
-    │  │ S3 Backup│   │
-    │  └──────────┘   │
-    └─────────────────┘
+```mermaid
+graph TD
+    subgraph PROD["us-east-1 (Production)"]
+        DB[(DynamoDB)]
+    end
+    
+    subgraph BACKUP["sa-east-1 (Backup Only)"]
+        S3[S3 Backup]
+    end
+    
+    DB -->|Daily Snapshot<br/>Automated| S3
+    
+    style PROD fill:#fff3e0,stroke:#ef6c00,stroke-width:2px
+    style BACKUP fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px
+    style DB fill:#2962ff,stroke:#0d47a1,stroke-width:2px,color:#fff
+    style S3 fill:#569A31,stroke:#3c6e26,stroke-width:2px,color:#fff
 ```
 
 **Vantagens desta abordagem:**
@@ -1037,7 +1388,168 @@ interface AuditLog {
 
 ---
 
-# 12. Estimativa de Custos AWS (MVP)
+# 13. Painel de Administração
+
+## Visão Geral
+
+O painel de administração é uma interface web para gestão do ambiente n-agent, com acesso restrito aos administradores da plataforma.
+
+## Arquitetura
+
+```mermaid
+graph TD
+    A[Admin Panel<br/>React App] --> B[BFF Lambda<br/>Auth + API]
+    B --> C[(DynamoDB<br/>AgentConfig)]
+    B --> D[Secrets Manager<br/>API Keys]
+    A --> E[CloudFront<br/>IP whitelist/VPN]
+    
+    style A fill:#61dafb,stroke:#20232a,stroke-width:2px
+    style B fill:#FF9900,stroke:#232F3E,stroke-width:2px,color:#fff
+    style C fill:#2962ff,stroke:#0d47a1,stroke-width:2px,color:#fff
+    style D fill:#d13212,stroke:#8b0000,stroke-width:2px,color:#fff
+    style E fill:#8C4FFF,stroke:#5c2d91,stroke-width:2px,color:#fff
+```
+
+## Funcionalidades
+
+### 1. Gestão de Prompts (MVP)
+
+Interface para criar, editar e versionar prompts dos agentes.
+
+```typescript
+interface PromptEditorState {
+  selectedAgent: AgentType;
+  versions: PromptVersion[];
+  activeVersion: PromptVersion;
+  draftContent: string;
+  variables: Variable[];
+  diffView: boolean;
+}
+```
+
+**Tela de Prompts:**
+- Lista de agentes com indicador de versão ativa
+- Editor de texto com syntax highlighting
+- Painel de variáveis disponíveis (ex: `{{tripContext}}`)
+- Histórico de versões com diff visual
+- Botões: "Salvar Rascunho", "Publicar Versão", "Rollback"
+
+### 2. Configuração de Integrações (MVP)
+
+Interface para configurar parâmetros das integrações externas.
+
+```typescript
+interface IntegrationConfig {
+  name: string;
+  icon: string;
+  enabled: boolean;
+  parameters: {
+    apiKeyRef?: string;        // Referência ao Secrets Manager
+    endpoint?: string;
+    rateLimits?: RateLimitConfig;
+    cacheTTL?: Record<string, number>;
+    customFields?: Record<string, any>;
+  };
+  healthStatus: 'healthy' | 'degraded' | 'down';
+  lastChecked: string;
+}
+```
+
+**Tela de Integrações:**
+- Cards para cada integração (Google Maps, Gemini, WhatsApp, etc.)
+- Indicador de status (verde/amarelo/vermelho)
+- Formulário de configuração por integração
+- Botão de "Test Connection"
+- Logs de uso e erros recentes
+
+### 3. Gestão de Administradores (MVP)
+
+Capacidade de adicionar e remover administradores da plataforma.
+
+```typescript
+interface AdminUser {
+  email: string;
+  name: string;
+  role: 'SUPER_ADMIN' | 'ADMIN' | 'VIEWER';
+  permissions: Permission[];
+  createdAt: string;
+  lastLogin: string;
+  status: 'active' | 'invited' | 'disabled';
+}
+
+enum Permission {
+  PROMPTS_READ = 'prompts:read',
+  PROMPTS_WRITE = 'prompts:write',
+  INTEGRATIONS_READ = 'integrations:read',
+  INTEGRATIONS_WRITE = 'integrations:write',
+  USERS_READ = 'users:read',
+  USERS_WRITE = 'users:write',
+  ANALYTICS_READ = 'analytics:read'
+}
+```
+
+**Tela de Administradores:**
+- Lista de admins com papel e status
+- Convite por email
+- Gestão de permissões granulares
+- Logs de ações por admin
+
+### 4. Dashboard de Monitoramento (MVP)
+
+Métricas de uso, custos e saúde do sistema.
+
+**Métricas exibidas:**
+- Usuários ativos (diário/mensal)
+- Viagens ativas por fase
+- Uso de tokens por agente
+- Custos AWS (estimado)
+- Taxa de erro por serviço
+- Latência P50/P95/P99
+
+### 5. Logs de Auditoria (MVP)
+
+Histórico de alterações em configurações e prompts.
+
+```typescript
+interface AuditEntry {
+  id: string;
+  timestamp: string;
+  actor: string;           // email do admin
+  action: AuditAction;
+  resource: string;        // ex: "PROMPT#ROUTER#VERSION#3"
+  previousValue?: any;
+  newValue?: any;
+  ip: string;
+  userAgent: string;
+}
+
+enum AuditAction {
+  PROMPT_CREATED = 'prompt.created',
+  PROMPT_UPDATED = 'prompt.updated',
+  PROMPT_ACTIVATED = 'prompt.activated',
+  PROMPT_ROLLBACK = 'prompt.rollback',
+  INTEGRATION_UPDATED = 'integration.updated',
+  INTEGRATION_ENABLED = 'integration.enabled',
+  INTEGRATION_DISABLED = 'integration.disabled',
+  ADMIN_INVITED = 'admin.invited',
+  ADMIN_REMOVED = 'admin.removed',
+  ADMIN_PERMISSION_CHANGED = 'admin.permission_changed'
+}
+```
+
+## Segurança do Painel Admin
+
+| Controle | Implementação |
+|----------|---------------|
+| **Autenticação** | Cognito com MFA obrigatório |
+| **Autorização** | Roles e permissions granulares |
+| **Acesso à rede** | CloudFront + WAF (IP whitelist ou VPN) |
+| **Auditoria** | Log de todas as ações administrativas |
+| **Secrets** | Chaves de API armazenadas no Secrets Manager, nunca expostas no frontend |
+
+---
+
+# 14. Estimativa de Custos AWS (MVP)
 
 ## Cenário: 1.000 usuários ativos, 100 viagens/mês
 
@@ -1048,15 +1560,15 @@ interface AuditLog {
 | **DynamoDB** | 10GB + 5M reads | ~$15 |
 | **S3** | 50GB storage | ~$1.15 |
 | **CloudFront** | 100GB transfer | ~$8.50 |
-| **Bedrock (Claude)** | 10M tokens | ~$30 |
+| **Bedrock (Multi-Agent)** | 10M tokens (mix) | ~$20 |
 | **Cognito** | 1K MAU | Free |
 | **EventBridge** | 100K eventos | ~$1 |
 | **SES** | 10K emails | ~$1 |
 | **CloudWatch** | Logs + métricas | ~$10 |
-| **ElastiCache** | t3.micro | ~$12 |
-| **Secrets Manager** | 5 secrets | ~$2 |
+| **AgentCore Runtime** | Incluído | ~$0 |
+| **Secrets Manager** | 10 secrets | ~$4 |
 
-### **Total Estimado: ~$90/mês**
+### **Total Estimado: ~$70/mês**
 
 ## APIs Externas
 
@@ -1070,6 +1582,6 @@ interface AuditLog {
 | AviationStack | 5K requests | ~$49 |
 | OpenWeather | 10K calls | ~$0 (free tier) |
 
-### **Total Infra + APIs: ~$250-300/mês no MVP**
+### **Total Infra + APIs: ~$240-290/mês no MVP**
 
-**Nota**: Com 100 viagens pagas/mês a R$ 149 (Concierge), receita bruta = R$ 14.900 (~$3.000). **Margem operacional saudável de ~90%.**
+**Nota**: Com a arquitetura multi-agent, houve redução de ~$30/mês em custos de LLM devido à otimização de modelos por tarefa. Com 100 viagens pagas/mês a R$ 149 (Concierge), receita bruta = R$ 14.900 (~$3.000). **Margem operacional saudável de ~90%.**

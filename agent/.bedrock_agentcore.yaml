@@ -2,7 +2,7 @@ default_agent: nagent
 agents:
   nagent:
     name: nagent
-    entrypoint: main:app
+    entrypoint: src/main.py
     deployment_type: direct_code_deploy
     runtime_type: PYTHON_3_12
     platform: linux/amd64

@@ -295,7 +295,657 @@ class TripRepository:
         return event_id
 ```
 
-### Passo 3.3: Ferramentas de Gestão de Viagem
+### Passo 3.3: Tabela NAgentProfiles (Perfis de Pessoa)
+
+A proposta técnica define uma tabela separada para perfis de pessoa, permitindo que informações pessoais (idade, preferências, restrições) sejam persistidas independentemente das viagens.
+
+#### Terraform: infra/terraform/modules/storage/profiles.tf
+
+```hcl
+# Tabela para perfis de pessoa individuais
+resource "aws_dynamodb_table" "profiles" {
+  name           = "n-agent-profiles"
+  billing_mode   = "PAY_PER_REQUEST"
+  hash_key       = "PK"
+  range_key      = "SK"
+
+  attribute {
+    name = "PK"
+    type = "S"
+  }
+
+  attribute {
+    name = "SK"
+    type = "S"
+  }
+
+  attribute {
+    name = "GSI1PK"
+    type = "S"
+  }
+
+  attribute {
+    name = "GSI1SK"
+    type = "S"
+  }
+
+  # GSI para buscar por email/phone
+  global_secondary_index {
+    name            = "GSI1"
+    hash_key        = "GSI1PK"
+    range_key       = "GSI1SK"
+    projection_type = "ALL"
+  }
+
+  point_in_time_recovery {
+    enabled = true
+  }
+
+  # Criptografia para dados sensíveis (LGPD)
+  server_side_encryption {
+    enabled = true
+  }
+
+  tags = {
+    Project     = "n-agent"
+    Environment = var.environment
+    DataClass   = "PII"  # Dados pessoais sensíveis
+  }
+}
+```
+
+#### Modelo de Dados: Perfil de Pessoa
+
+```python
+# Perfil Geral de Pessoa
+PERSON_PROFILE_GENERAL = {
+    "PK": "PERSON#person-456",
+    "SK": "PROFILE#GENERAL",
+    "person_id": "person-456",
+    "nome": "Fabiola Santos",
+    "email": "fabiola@email.com",
+    "phone": "+5511999999999",
+    "idade": 42,
+    "data_nascimento": "1985-03-15",
+    "preferencias": {
+        "tipos_atracao": ["cultural", "historico", "gastronomia"],
+        "ritmo_viagem": "moderado",  # lento | moderado | intenso
+        "horario_preferido": "manha",  # manha | tarde | noite
+        "estilo_hospedagem": ["airbnb", "hotel_boutique"],
+        "nivel_conforto": "medio"  # economico | medio | luxo
+    },
+    "restricoes": {
+        "alimentares": ["vegetariana", "sem_gluten"],
+        "mobilidade": None,  # ou "cadeira_rodas", "dificuldade_locomocao"
+        "fobias": ["altura", "lugares_fechados"],
+        "alergias": ["amendoim"],
+        "medicamentos_uso_continuo": False
+    },
+    "documentos": {
+        "passaporte_numero": "FX123456",
+        "passaporte_validade": "2030-05-20",
+        "passaporte_pais": "BRA",
+        "rg": "12.345.678-9",
+        "cpf": "123.456.789-00"
+    },
+    "idiomas": ["portugues", "ingles_basico"],
+    "updated_at": "2025-01-15T10:00:00Z",
+    "updated_by": "USER#victor@email.com",
+    "created_at": "2024-06-01T08:00:00Z"
+}
+
+# Preferências específicas por viagem
+PERSON_TRIP_PREFERENCES = {
+    "PK": "PERSON#person-456",
+    "SK": "TRIP#trip-123#PREFS",
+    "person_id": "person-456",
+    "trip_id": "trip-123",
+    "atividades_desejadas": [
+        {"nome": "Visitar Notre Dame", "prioridade": 1},
+        {"nome": "Comer croissant autêntico", "prioridade": 2}
+    ],
+    "locais_interesse": ["Montmartre", "Louvre", "Versailles"],
+    "restricoes_locais": ["Torre Eiffel - medo de altura"],
+    "compras_desejadas": ["Perfume francês", "Queijos"],
+    "orcamento_pessoal": 2000,
+    "moeda": "EUR",
+    "updated_at": "2025-01-15T10:00:00Z"
+}
+
+# Histórico de viagens da pessoa
+PERSON_TRIP_HISTORY = {
+    "PK": "PERSON#person-456",
+    "SK": "HISTORY#2024",
+    "viagens": [
+        {"trip_id": "trip-abc", "destino": "Portugal", "data": "2024-03"},
+        {"trip_id": "trip-xyz", "destino": "Argentina", "data": "2024-09"}
+    ]
+}
+```
+
+### Passo 3.3.1: Repositório de Perfis de Pessoa
+
+**agent/src/repositories/person_repository.py**:
+
+```python
+import boto3
+import uuid
+from datetime import datetime
+from typing import Optional, List, Dict
+
+class PersonRepository:
+    """Repositório para perfis de pessoa (tabela n-agent-profiles)."""
+    
+    def __init__(self, table_name: str = "n-agent-profiles"):
+        self.dynamodb = boto3.resource('dynamodb')
+        self.table = self.dynamodb.Table(table_name)
+    
+    def create_person(self, name: str, email: str, phone: Optional[str] = None) -> str:
+        """Cria um novo perfil de pessoa."""
+        person_id = f"person-{uuid.uuid4().hex[:8]}"
+        now = datetime.utcnow().isoformat()
+        
+        self.table.put_item(Item={
+            'PK': f'PERSON#{person_id}',
+            'SK': 'PROFILE#GENERAL',
+            'person_id': person_id,
+            'nome': name,
+            'email': email,
+            'phone': phone,
+            'preferencias': {},
+            'restricoes': {},
+            'documentos': {},
+            'idiomas': ['portugues'],
+            'created_at': now,
+            'updated_at': now,
+            'GSI1PK': f'EMAIL#{email}',
+            'GSI1SK': f'PERSON#{person_id}'
+        })
+        
+        return person_id
+    
+    def get_person_by_id(self, person_id: str) -> Optional[Dict]:
+        """Busca pessoa por ID."""
+        response = self.table.get_item(
+            Key={'PK': f'PERSON#{person_id}', 'SK': 'PROFILE#GENERAL'}
+        )
+        return response.get('Item')
+    
+    def get_person_by_email(self, email: str) -> Optional[Dict]:
+        """Busca pessoa por email."""
+        response = self.table.query(
+            IndexName='GSI1',
+            KeyConditionExpression='GSI1PK = :pk',
+            ExpressionAttributeValues={':pk': f'EMAIL#{email}'}
+        )
+        items = response.get('Items', [])
+        return items[0] if items else None
+    
+    def update_person_profile(self, person_id: str, updates: Dict, updated_by: str) -> bool:
+        """Atualiza dados do perfil."""
+        update_expr = 'SET updated_at = :now, updated_by = :by'
+        expr_values = {
+            ':now': datetime.utcnow().isoformat(),
+            ':by': updated_by
+        }
+        
+        for key, value in updates.items():
+            update_expr += f', {key} = :{key}'
+            expr_values[f':{key}'] = value
+        
+        self.table.update_item(
+            Key={'PK': f'PERSON#{person_id}', 'SK': 'PROFILE#GENERAL'},
+            UpdateExpression=update_expr,
+            ExpressionAttributeValues=expr_values
+        )
+        return True
+    
+    def update_person_preferences(self, person_id: str, preferences: Dict, updated_by: str) -> bool:
+        """Atualiza preferências de viagem."""
+        current = self.get_person_by_id(person_id)
+        if not current:
+            return False
+        
+        # Merge de preferências existentes com novas
+        existing_prefs = current.get('preferencias', {})
+        merged_prefs = {**existing_prefs, **preferences}
+        
+        return self.update_person_profile(
+            person_id, 
+            {'preferencias': merged_prefs}, 
+            updated_by
+        )
+    
+    def update_person_restrictions(self, person_id: str, restrictions: Dict, updated_by: str) -> bool:
+        """Atualiza restrições (alimentares, mobilidade, fobias)."""
+        current = self.get_person_by_id(person_id)
+        if not current:
+            return False
+        
+        existing_rest = current.get('restricoes', {})
+        merged_rest = {**existing_rest, **restrictions}
+        
+        return self.update_person_profile(
+            person_id, 
+            {'restricoes': merged_rest}, 
+            updated_by
+        )
+    
+    def add_person_trip_preferences(
+        self, 
+        person_id: str, 
+        trip_id: str, 
+        preferences: Dict
+    ) -> bool:
+        """Adiciona preferências específicas para uma viagem."""
+        now = datetime.utcnow().isoformat()
+        
+        self.table.put_item(Item={
+            'PK': f'PERSON#{person_id}',
+            'SK': f'TRIP#{trip_id}#PREFS',
+            'person_id': person_id,
+            'trip_id': trip_id,
+            **preferences,
+            'updated_at': now
+        })
+        return True
+    
+    def get_person_trip_preferences(self, person_id: str, trip_id: str) -> Optional[Dict]:
+        """Busca preferências de uma pessoa para uma viagem específica."""
+        response = self.table.get_item(
+            Key={'PK': f'PERSON#{person_id}', 'SK': f'TRIP#{trip_id}#PREFS'}
+        )
+        return response.get('Item')
+    
+    def get_all_person_data(self, person_id: str) -> Dict:
+        """Busca todos os dados de uma pessoa (perfil + preferências por viagem)."""
+        response = self.table.query(
+            KeyConditionExpression='PK = :pk',
+            ExpressionAttributeValues={':pk': f'PERSON#{person_id}'}
+        )
+        
+        result = {
+            'profile': None,
+            'trip_preferences': []
+        }
+        
+        for item in response.get('Items', []):
+            sk = item['SK']
+            if sk == 'PROFILE#GENERAL':
+                result['profile'] = item
+            elif sk.startswith('TRIP#') and sk.endswith('#PREFS'):
+                result['trip_preferences'].append(item)
+        
+        return result
+```
+
+### Passo 3.3.2: Ferramentas de Perfil de Pessoa
+
+**agent/src/tools/person_tools.py**:
+
+```python
+from strands import tool
+from typing import Dict, List, Optional
+from ..repositories.person_repository import PersonRepository
+
+person_repo = PersonRepository()
+
+@tool
+def get_person_profile_summary(person_id: str) -> dict:
+    """
+    Obtém um resumo compacto do perfil de uma pessoa.
+    Use para ter contexto rápido sobre preferências e restrições.
+    
+    Retorna: nome, idade, principais preferências, restrições alimentares e fobias.
+    """
+    profile = person_repo.get_person_by_id(person_id)
+    if not profile:
+        return {'error': 'Pessoa não encontrada'}
+    
+    return {
+        'person_id': person_id,
+        'nome': profile.get('nome'),
+        'idade': profile.get('idade'),
+        'preferencias_resumo': {
+            'tipos_atracao': profile.get('preferencias', {}).get('tipos_atracao', []),
+            'ritmo': profile.get('preferencias', {}).get('ritmo_viagem'),
+            'nivel_conforto': profile.get('preferencias', {}).get('nivel_conforto')
+        },
+        'restricoes_resumo': {
+            'alimentares': profile.get('restricoes', {}).get('alimentares', []),
+            'fobias': profile.get('restricoes', {}).get('fobias', []),
+            'mobilidade': profile.get('restricoes', {}).get('mobilidade')
+        },
+        'idiomas': profile.get('idiomas', [])
+    }
+
+
+@tool
+def get_person_profile_details(person_id: str) -> dict:
+    """
+    Obtém dados detalhados completos de uma pessoa.
+    Inclui: todas as preferências, restrições, documentos e histórico.
+    
+    Use quando precisar de informações completas para planejamento ou validação.
+    """
+    data = person_repo.get_all_person_data(person_id)
+    if not data['profile']:
+        return {'error': 'Pessoa não encontrada'}
+    
+    profile = data['profile']
+    
+    return {
+        'person_id': person_id,
+        'dados_pessoais': {
+            'nome': profile.get('nome'),
+            'email': profile.get('email'),
+            'phone': profile.get('phone'),
+            'idade': profile.get('idade'),
+            'data_nascimento': profile.get('data_nascimento')
+        },
+        'preferencias': profile.get('preferencias', {}),
+        'restricoes': profile.get('restricoes', {}),
+        'documentos': {
+            'passaporte_validade': profile.get('documentos', {}).get('passaporte_validade'),
+            'passaporte_pais': profile.get('documentos', {}).get('passaporte_pais')
+        },
+        'idiomas': profile.get('idiomas', []),
+        'viagens_participando': len(data['trip_preferences']),
+        'updated_at': profile.get('updated_at')
+    }
+
+
+@tool
+def update_person_profile(
+    person_id: str, 
+    updates: dict,
+    updated_by: str
+) -> dict:
+    """
+    Atualiza informações do perfil de uma pessoa.
+    Use para salvar informações extraídas durante a conversa.
+    
+    Args:
+        person_id: ID da pessoa
+        updates: Dicionário com campos a atualizar. Campos possíveis:
+            - nome: str
+            - idade: int
+            - data_nascimento: str (YYYY-MM-DD)
+            - idiomas: list[str]
+        updated_by: ID do usuário que está atualizando
+    
+    Nota: Para preferências e restrições, use as ferramentas específicas.
+    """
+    success = person_repo.update_person_profile(person_id, updates, updated_by)
+    
+    if success:
+        return {
+            'success': True,
+            'message': f'Perfil de {person_id} atualizado com sucesso.'
+        }
+    return {'error': 'Falha ao atualizar perfil'}
+
+
+@tool
+def add_person_preference(
+    person_id: str,
+    preference_type: str,
+    preference_value: any,
+    updated_by: str
+) -> dict:
+    """
+    Adiciona uma preferência ao perfil de uma pessoa.
+    
+    Args:
+        person_id: ID da pessoa
+        preference_type: Tipo da preferência. Opções:
+            - tipos_atracao: lista (cultural, historico, aventura, natureza, gastronomia, compras)
+            - ritmo_viagem: string (lento, moderado, intenso)
+            - horario_preferido: string (manha, tarde, noite)
+            - estilo_hospedagem: lista (hotel, airbnb, hostel, resort)
+            - nivel_conforto: string (economico, medio, luxo)
+        preference_value: Valor da preferência
+        updated_by: ID do usuário que está adicionando
+    
+    Exemplo: add_person_preference("person-123", "tipos_atracao", ["cultural", "gastronomia"], "user-456")
+    """
+    success = person_repo.update_person_preferences(
+        person_id, 
+        {preference_type: preference_value}, 
+        updated_by
+    )
+    
+    if success:
+        return {
+            'success': True,
+            'message': f'Preferência "{preference_type}" adicionada ao perfil.'
+        }
+    return {'error': 'Falha ao adicionar preferência'}
+
+
+@tool
+def add_person_restriction(
+    person_id: str,
+    restriction_type: str,
+    restriction_value: any,
+    updated_by: str
+) -> dict:
+    """
+    Adiciona uma restrição ao perfil de uma pessoa.
+    Restrições são informações críticas para planejamento seguro da viagem.
+    
+    Args:
+        person_id: ID da pessoa
+        restriction_type: Tipo da restrição. Opções:
+            - alimentares: lista (vegetariano, vegano, sem_gluten, sem_lactose, kosher, halal)
+            - mobilidade: string (cadeira_rodas, dificuldade_locomocao, muletas, None)
+            - fobias: lista (altura, lugares_fechados, aviao, agua, multidoes)
+            - alergias: lista (amendoim, frutos_do_mar, latex, etc.)
+            - medicamentos_uso_continuo: bool
+        restriction_value: Valor da restrição
+        updated_by: ID do usuário que está adicionando
+    
+    Nota: Restrições são consideradas na sugestão de roteiros e atrações.
+    """
+    success = person_repo.update_person_restrictions(
+        person_id, 
+        {restriction_type: restriction_value}, 
+        updated_by
+    )
+    
+    if success:
+        return {
+            'success': True,
+            'message': f'⚠️ Restrição "{restriction_type}" registrada. Vou considerar isso nas sugestões!'
+        }
+    return {'error': 'Falha ao adicionar restrição'}
+
+
+@tool
+def add_person_trip_activity(
+    person_id: str,
+    trip_id: str,
+    activity: dict
+) -> dict:
+    """
+    Adiciona uma atividade desejada por uma pessoa para uma viagem específica.
+    
+    Args:
+        person_id: ID da pessoa
+        trip_id: ID da viagem
+        activity: Dicionário com:
+            - nome: str (nome da atividade/local)
+            - prioridade: int (1=alta, 2=média, 3=baixa)
+            - categoria: str (opcional - atração, restaurante, compras, experiência)
+            - notas: str (opcional - observações adicionais)
+    
+    Exemplo: Uma pessoa quer muito visitar a Torre Eiffel
+    """
+    # Buscar preferências existentes
+    existing = person_repo.get_person_trip_preferences(person_id, trip_id)
+    
+    activities = []
+    if existing:
+        activities = existing.get('atividades_desejadas', [])
+    
+    activities.append({
+        'nome': activity['nome'],
+        'prioridade': activity.get('prioridade', 2),
+        'categoria': activity.get('categoria', 'atração'),
+        'notas': activity.get('notas', '')
+    })
+    
+    person_repo.add_person_trip_preferences(
+        person_id, 
+        trip_id,
+        {'atividades_desejadas': activities}
+    )
+    
+    return {
+        'success': True,
+        'message': f'✅ "{activity["nome"]}" adicionado à lista de desejos de {person_id}!'
+    }
+
+
+@tool
+def get_trip_participants_profiles(trip_id: str) -> dict:
+    """
+    Obtém resumo dos perfis de todos os participantes de uma viagem.
+    Útil para planejar roteiros considerando preferências e restrições do grupo.
+    
+    Retorna:
+        - Lista de participantes com preferências e restrições resumidas
+        - Restrições consolidadas do grupo (ex: se alguém é vegetariano, grupo precisa de opções)
+        - Interesses em comum
+    """
+    from ..repositories.trip_repository import TripRepository
+    trip_repo = TripRepository()
+    
+    trip_data = trip_repo.get_trip(trip_id)
+    if not trip_data:
+        return {'error': 'Viagem não encontrada'}
+    
+    participants = []
+    all_restrictions = {
+        'alimentares': set(),
+        'mobilidade': [],
+        'fobias': set()
+    }
+    all_interests = []
+    
+    for member in trip_data['members']:
+        # Buscar perfil completo da pessoa
+        person = person_repo.get_person_by_email(member.get('email'))
+        
+        if person:
+            person_id = person.get('person_id')
+            
+            # Resumo do participante
+            participant = {
+                'person_id': person_id,
+                'nome': person.get('nome', member.get('name')),
+                'role': member.get('role'),
+                'preferencias': person.get('preferencias', {}),
+                'restricoes': person.get('restricoes', {})
+            }
+            participants.append(participant)
+            
+            # Consolidar restrições
+            rest = person.get('restricoes', {})
+            if rest.get('alimentares'):
+                all_restrictions['alimentares'].update(rest['alimentares'])
+            if rest.get('mobilidade'):
+                all_restrictions['mobilidade'].append(rest['mobilidade'])
+            if rest.get('fobias'):
+                all_restrictions['fobias'].update(rest['fobias'])
+            
+            # Coletar interesses
+            if person.get('preferencias', {}).get('tipos_atracao'):
+                all_interests.extend(person['preferencias']['tipos_atracao'])
+        else:
+            # Pessoa sem perfil cadastrado
+            participants.append({
+                'nome': member.get('name'),
+                'role': member.get('role'),
+                'perfil_incompleto': True
+            })
+    
+    # Encontrar interesses em comum
+    from collections import Counter
+    interest_counts = Counter(all_interests)
+    common_interests = [i for i, c in interest_counts.items() if c >= 2]
+    
+    return {
+        'trip_id': trip_id,
+        'total_participantes': len(participants),
+        'participantes': participants,
+        'restricoes_grupo': {
+            'alimentares': list(all_restrictions['alimentares']),
+            'mobilidade': all_restrictions['mobilidade'],
+            'fobias': list(all_restrictions['fobias'])
+        },
+        'interesses_comuns': common_interests,
+        'message': f'Grupo de {len(participants)} pessoas com {len(all_restrictions["alimentares"])} restrições alimentares e {len(all_restrictions["fobias"])} fobias a considerar.'
+    }
+
+
+@tool
+def create_or_link_person(
+    email: str,
+    name: str,
+    trip_id: str,
+    phone: Optional[str] = None
+) -> dict:
+    """
+    Cria um novo perfil de pessoa ou vincula pessoa existente a uma viagem.
+    Use quando o usuário mencionar uma nova pessoa para participar da viagem.
+    
+    Args:
+        email: Email da pessoa (identificador único)
+        name: Nome da pessoa
+        trip_id: ID da viagem para vincular
+        phone: Telefone (opcional)
+    
+    Fluxo:
+        1. Verifica se pessoa já existe (por email)
+        2. Se não existe, cria novo perfil
+        3. Vincula pessoa à viagem como MEMBER
+    """
+    from ..repositories.trip_repository import TripRepository
+    from ..models.trip import TripMember, MemberRole
+    
+    trip_repo = TripRepository()
+    
+    # Verificar se pessoa já existe
+    existing = person_repo.get_person_by_email(email)
+    
+    if existing:
+        person_id = existing.get('person_id')
+        message = f'Pessoa {name} já cadastrada, vinculando à viagem.'
+    else:
+        # Criar novo perfil
+        person_id = person_repo.create_person(name, email, phone)
+        message = f'Novo perfil criado para {name}.'
+    
+    # Vincular à viagem
+    trip_repo._add_member(trip_id, TripMember(
+        email=email,
+        name=name,
+        role=MemberRole.VIEWER,
+        phone=phone
+    ))
+    
+    return {
+        'success': True,
+        'person_id': person_id,
+        'trip_id': trip_id,
+        'message': f'{message} {name} adicionado à viagem!'
+    }
+```
+
+---
+
+### Passo 3.3.3: Ferramentas de Gestão de Viagem
 
 **agent/src/tools/trip_tools.py**:
 

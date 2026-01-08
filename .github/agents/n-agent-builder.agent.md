@@ -125,26 +125,19 @@ uv run ruff format src/
 **ALWAYS run before commit**:
 
 ```bash
-# Full validation + deploy
-./scripts/deploy.sh
-
-# Skip tests (if already validated)
-./scripts/deploy.sh --skip-tests
-
-# Validation only (no deploy)
+# Local validation only (no deploy)
 ./scripts/validate.sh
+
+# Full validation + manual deploy (use only for testing/debugging)
+./scripts/deploy.sh
 ```
 
-### Deploy Modes
+### Deploy Strategy
 
-**Mode 1: Manual via scripts**:
-```bash
-./scripts/deploy.sh              # Full validation + deploy
-./scripts/deploy.sh --skip-tests # Skip tests (if already validated)
-./scripts/validate.sh            # Validation only (no deploy)
-```
+**🎯 RECOMMENDED: GitHub Actions (Automatic)**
 
-**Mode 2: GitHub Actions (Recommended)**:
+This is the **standard and correct way** to deploy:
+
 ```bash
 git add agent/
 git commit -m "feat: nova funcionalidade"
@@ -152,12 +145,67 @@ git push origin main  # Auto-deploy on push to main
 ```
 
 **Pipeline steps**:
-1. Validate Python 3.11, requirements.txt (no ruamel-yaml)
-2. Run pytest + ruff
-3. Deploy via `agentcore launch`
-4. Smoke test + CloudWatch logs
+1. ✅ Validate Python 3.12, requirements.txt (no ruamel-yaml)
+2. ✅ Run 29 unit tests (pytest) + linting (ruff)
+3. ✅ Deploy via `agentcore launch`
+4. ✅ Smoke test + CloudWatch logs
+5. ✅ Production test suite validation
 
 **Container**: `ghcr.io/astral-sh/uv:latest` (official, uv pre-installed)
+
+**⚠️ Manual Deploy (scripts/deploy.sh)**
+
+Use **ONLY** for:
+- 🔧 Local testing and debugging
+- 🧪 Experimental changes
+- 🚨 Emergency hotfixes
+
+```bash
+./scripts/deploy.sh              # Full validation + deploy
+./scripts/deploy.sh --skip-tests # Skip tests (emergency only)
+```
+
+**DO NOT** use manual deploy for regular development workflow.
+
+### Production Testing
+
+**CRITICAL**: After every deploy, validate with production tests.
+
+**Test Modes**:
+
+1. **Local/Dev Testing** (against `agentcore dev`):
+```bash
+# Start dev server first
+cd agent && uv run agentcore dev &
+sleep 8
+
+# Run tests
+./scripts/test-production.sh local
+```
+
+2. **Production Testing** (against AWS AgentCore Runtime):
+```bash
+# Test deployed agent
+./scripts/test-production.sh production
+
+# Or simply (production is default)
+./scripts/test-production.sh
+```
+
+**Test Coverage**:
+- ✅ Basic invoke (agent responding)
+- ✅ Router classification (cost optimization)
+- ✅ Memory context save
+- ✅ Memory context retrieval (cross-session)
+- ✅ Travel query handling
+
+**Success Criteria**:
+- All 4-5 tests must pass
+- Response time < 5s
+- Memory context retrieved correctly
+- Router selecting appropriate models
+
+**GitHub Actions**: Tests run automatically post-deploy.
 
 ## 📁 Project Structure
 

@@ -129,11 +129,11 @@ jobs:
           echo "📋 Deployment Status:"
           agentcore status || echo "Status check failed"
       
-      - name: Test deployed agent
-        working-directory: agent
+      - name: Run Production Tests
         run: |
-          echo "🧪 Testing deployed agent..."
-          agentcore invoke '{"prompt": "Hello from CI/CD!"}' || echo "⚠️ Invoke failed - check logs"
+          echo "🧪 Running production test suite..."
+          chmod +x scripts/test-production.sh
+          ./scripts/test-production.sh production
       
       - name: Output CloudWatch logs
         if: always()

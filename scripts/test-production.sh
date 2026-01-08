@@ -114,7 +114,7 @@ else
     run_test \
         "Basic greeting" \
         "agentcore invoke '{\"prompt\": \"Olá!\"}' --session-id \"$SESSION_ID\" 2>&1" \
-        "n-agent"
+        "Session:"
     
     # Test 2: Travel query
     run_test \

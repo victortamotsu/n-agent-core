@@ -1,0 +1,18 @@
+# Example terraform.tfvars
+# Copy to terraform.tfvars and fill in your values
+
+aws_region = "us-east-1"
+
+# AgentCore Configuration
+# Get from .bedrock_agentcore.yaml or `agentcore status`
+agentcore_agent_id       = "nagent-GcrnJb6DU5"
+agentcore_agent_alias_id = "TSTALIASID"
+agentcore_agent_arn      = "arn:aws:bedrock-agentcore:us-east-1:944938120078:runtime/nagent-GcrnJb6DU5"
+
+# OAuth Providers (optional)
+# Leave empty to skip OAuth configuration
+google_client_id        = ""
+google_client_secret    = ""
+microsoft_client_id     = ""
+microsoft_client_secret = ""
+microsoft_tenant_id     = ""

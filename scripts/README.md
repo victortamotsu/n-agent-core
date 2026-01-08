@@ -13,6 +13,7 @@ Este diretório contém scripts para desenvolvimento, deploy e testes do n-agent
 ### Deployment
 
 - **`deploy.sh`** - Deploy manual (use apenas para debug/testes)
+- **`provision.sh`** - Provisiona infraestrutura (Cognito, API Gateway, Lambda BFF)
 - **GitHub Actions** - Deploy automático via pipeline (RECOMENDADO)
 
 ### Setup
@@ -113,6 +114,89 @@ Use **APENAS** para:
 ```
 
 **NÃO use** para workflow regular de desenvolvimento.
+
+---
+
+## 🏗️ Provisioning Infrastructure (provision.sh)
+
+Script automatizado para provisionar infraestrutura via Terraform:
+- ✅ Cognito User Pool (autenticação)
+- ✅ API Gateway (HTTP API com JWT)
+- ✅ Lambda BFF (proxy API → AgentCore)
+
+### Uso
+
+```bash
+./scripts/provision.sh
+```
+
+### O que o script faz?
+
+1. **Valida pré-requisitos**:
+   - ✅ Terraform instalado (>= 1.6.0)
+   - ✅ AWS CLI configurado
+   - ✅ AgentCore Runtime deployed
+   
+2. **Verifica terraform.tfvars**:
+   - Cria de `terraform.tfvars.example` se não existir
+   - Valida valores obrigatórios (agentcore_agent_id, etc.)
+
+3. **Terraform workflow**:
+   - `terraform init`
+   - `terraform plan` (com confirmação)
+   - `terraform apply`
+
+4. **Captura outputs**:
+   - Salva outputs em JSON
+   - Mostra summary (API endpoint, Cognito IDs, Lambda)
+
+5. **Health check**:
+   - Testa endpoint `/health` da API
+   - Sugere próximos passos
+
+### Outputs capturados
+
+```json
+{
+  "api_endpoint": "https://abc123.execute-api.us-east-1.amazonaws.com",
+  "cognito_user_pool_id": "us-east-1_ABC123",
+  "cognito_client_id": "1a2b3c4d5e6f7g8h9i0j",
+  "lambda_bff_function_name": "n-agent-core-bff-prod"
+}
+```
+
+### Próximos passos (após provisioning)
+
+1. **Criar usuário de teste**:
+```bash
+aws cognito-idp admin-create-user \
+  --user-pool-id "us-east-1_ABC123" \
+  --username "test@example.com" \
+  --temporary-password "TempPass123!" \
+  --user-attributes Name=email,Value=test@example.com
+```
+
+2. **Executar testes de integração**:
+```bash
+export API_ENDPOINT="https://abc123.execute-api.us-east-1.amazonaws.com"
+export COGNITO_USER_POOL_ID="us-east-1_ABC123"
+export COGNITO_CLIENT_ID="1a2b3c4d5e6f7g8h9i0j"
+./scripts/test-api-integration.sh
+```
+
+3. **Configurar GitHub Secrets** (para CI/CD):
+```bash
+gh secret set API_ENDPOINT --body "$API_ENDPOINT"
+gh secret set COGNITO_USER_POOL_ID --body "$COGNITO_USER_POOL_ID"
+gh secret set COGNITO_CLIENT_ID --body "$COGNITO_CLIENT_ID"
+```
+
+4. **Deploy frontend**:
+```bash
+cd apps/web-client
+echo "VITE_API_URL=$API_ENDPOINT" > .env.production
+npm run build
+```
 
 ---
 

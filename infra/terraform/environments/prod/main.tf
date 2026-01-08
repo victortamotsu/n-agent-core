@@ -31,7 +31,96 @@ provider "aws" {
   }
 }
 
-# Use root module configuration
+# Cognito User Pool for authentication
+module "cognito" {
+  source = "../../modules/cognito"
+
+  user_pool_name   = "${var.project_name}-users-${var.environment}"
+  user_pool_domain = "${var.project_name}-${var.environment}"
+
+  callback_urls = [
+    "http://localhost:5173/auth/callback",
+    "https://app.n-agent.com/auth/callback"
+  ]
+
+  logout_urls = [
+    "http://localhost:5173",
+    "https://app.n-agent.com"
+  ]
+
+  # OAuth Providers (optional)
+  google_client_id        = var.google_client_id
+  google_client_secret    = var.google_client_secret
+  microsoft_client_id     = var.microsoft_client_id
+  microsoft_client_secret = var.microsoft_client_secret
+  microsoft_tenant_id     = var.microsoft_tenant_id
+
+  tags = {
+    Module = "cognito"
+  }
+}
+
+# API Gateway
+module "api_gateway" {
+  source = "../../modules/api-gateway"
+
+  api_name    = "${var.project_name}-api-${var.environment}"
+  environment = var.environment
+
+  cors_allow_origins = [
+    "http://localhost:5173",
+    "https://app.n-agent.com"
+  ]
+
+  # Connect to Cognito
+  cognito_user_pool_arn = module.cognito.user_pool_arn
+  cognito_app_client_id = module.cognito.web_client_id
+
+  tags = {
+    Module = "api-gateway"
+  }
+}
+
+# Lambda BFF
+module "lambda_bff" {
+  source = "../../modules/lambda-bff"
+
+  function_name = "${var.project_name}-bff-${var.environment}"
+
+  agentcore_agent_id       = var.agentcore_agent_id
+  agentcore_agent_alias_id = var.agentcore_agent_alias_id
+  agentcore_agent_arn      = var.agentcore_agent_arn
+
+  api_gateway_execution_arn = module.api_gateway.api_execution_arn
+  aws_region                = var.aws_region
+
+  tags = {
+    Module = "lambda-bff"
+  }
+}
+
+# API Gateway Integrations
+resource "aws_apigatewayv2_integration" "lambda_bff" {
+  api_id           = module.api_gateway.api_id
+  integration_type = "AWS_PROXY"
+  integration_uri  = module.lambda_bff.function_invoke_arn
+
+  integration_method     = "POST"
+  payload_format_version = "2.0"
+  timeout_milliseconds   = 30000
+}
+
+resource "aws_apigatewayv2_route" "chat" {
+  api_id    = module.api_gateway.api_id
+  route_key = "POST /chat"
+
+  authorization_type = "JWT"
+  authorizer_id      = module.api_gateway.authorizer_id
+
+  target = "integrations/${aws_apigatewayv2_integration.lambda_bff.id}"
+}
+
+# Use root module configuration (existing infrastructure)
 module "infrastructure" {
   source = "../.."
 

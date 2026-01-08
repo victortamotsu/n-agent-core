@@ -107,3 +107,43 @@ variable "microsoft_client_secret" {
   type        = string
   sensitive   = true
 }
+
+variable "microsoft_tenant_id" {
+  description = "Microsoft Azure AD Tenant ID"
+  type        = string
+  default     = "common"
+}
+
+# AgentCore Configuration
+variable "agentcore_agent_id" {
+  description = "AgentCore Agent ID (from .bedrock_agentcore.yaml)"
+  type        = string
+  default     = "nagent-GcrnJb6DU5"
+}
+
+variable "agentcore_agent_alias_id" {
+  description = "AgentCore Agent Alias ID"
+  type        = string
+  default     = "TSTALIASID"
+}
+
+variable "agentcore_agent_arn" {
+  description = "AgentCore Agent ARN"
+  type        = string
+  default     = "arn:aws:bedrock-agentcore:us-east-1:944938120078:runtime/nagent-GcrnJb6DU5"
+}
+
+# Cognito OAuth (map existing variables)
+variable "google_client_id" {
+  description = "Google OAuth client ID (alias)"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+
+variable "google_client_secret" {
+  description = "Google OAuth client secret (alias)"
+  type        = string
+  default     = ""
+  sensitive   = true
+}

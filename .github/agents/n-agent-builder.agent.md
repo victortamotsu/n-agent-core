@@ -53,43 +53,57 @@ tools: ['vscode', 'execute', 'read', 'edit', 'search', 'web', 'aws-documentation
 @aws-pricing get-pricing AWSLambda us-east-1
 ```
 
-### 4. PowerShell Encoding (CRITICAL)
+### 4. Shell Scripts Best Practices
 
-**Problem**: UTF-8 BOM causes parsing errors in PowerShell scripts.
+**Git Bash is now the default terminal** (configured on 2026-01-06)
 
-**Solution**:
-```powershell
-# Use ASCII-safe characters only
-# Avoid: ✅ ❌ 🚀 → • - *
-# Use: OK, ERROR, SUCCESS, FAIL
+**Bash Script Guidelines**:
+```bash
+#!/bin/bash
+# Always use shebang
+# Use set -e for fail-fast
+# Use set -u for undefined variable errors
 
-# When creating PS1 files:
-[System.IO.File]::WriteAllText($path, $content, [System.Text.UTF8Encoding]::new($false))
+set -euo pipefail  # Recommended for production scripts
 
-# Or save as UTF-8 without BOM in VS Code
+# Good practices:
+# - Quote variables: "$VAR" not $VAR
+# - Use [[ ]] for tests, not [ ]
+# - Check command existence: command -v tool &>/dev/null
+```
+
+**File Permissions**:
+```bash
+# Make scripts executable
+chmod +x scripts/*.sh
 ```
 
 ## 🛠️ Development Workflow
 
-### Daily Development (Windows)
+### Daily Development (Git Bash)
 
-```powershell
+```bash
 cd agent
 
 # Install dependencies
 uv sync
 
-# Run DEV mode (localhost:8080) - NÃO usar isBackground, usar Start-Process
-cd agent
-$env:BEDROCK_AGENTCORE_MEMORY_ID="nAgentMemory-jXyHuA6yrO"
-Start-Process -NoNewWindow -FilePath "powershell" -ArgumentList "-NoExit", "-Command", "cd 'C:\Users\victo\Projetos\n-agent-core\agent'; `$env:BEDROCK_AGENTCORE_MEMORY_ID='nAgentMemory-jXyHuA6yrO'; uv run agentcore dev"
+# Run DEV mode (localhost:8080) in background
+export BEDROCK_AGENTCORE_MEMORY_ID="nAgentMemory-jXyHuA6yrO"
+uv run agentcore dev &
 
-# Aguardar servidor iniciar (8 segundos)
-Start-Sleep -Seconds 8
+# Wait for server to start
+sleep 8
 
-# Test (PowerShell syntax)
-$payload = Get-Content -Path "test_payload.json" -Raw
-Invoke-RestMethod -Uri "http://localhost:8080/invocations" -Method Post -Body $payload -ContentType "application/json"
+# Test with curl
+curl -X POST http://localhost:8080/invocations \
+  -H "Content-Type: application/json" \
+  -d @test_payload.json
+
+# Or test with one-liner
+curl -X POST http://localhost:8080/invocations \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": "Olá, teste!"}'
 
 # Unit tests
 uv run pytest tests/ -v
@@ -99,30 +113,38 @@ uv run ruff check src/ --fix
 uv run ruff format src/
 ```
 
+### Quick Start Script
+
+```bash
+# Use the dev script for easier setup
+./scripts/dev.sh
+```
+
 ### Pre-Commit Validation
 
 **ALWAYS run before commit**:
 
-```powershell
-# 1. Tests
-uv run pytest tests/ -v
+```bash
+# Full validation + deploy
+./scripts/deploy.sh
 
-# 2. Linter
-uv run ruff check src/
+# Skip tests (if already validated)
+./scripts/deploy.sh --skip-tests
 
-# 3. Build validation (WSL - optional)
-.\scripts\validate-pre-deploy.ps1
+# Validation only (no deploy)
+./scripts/validate.sh
 ```
 
 ### Deploy Modes
 
-**Mode 1: Manual (Emergency only)**:
-```powershell
-.\deploy.ps1              # Full validation + deploy
-.\deploy.ps1 -SkipTests   # Skip tests (if already validated)
+**Mode 1: Manual via scripts**:
+```bash
+./scripts/deploy.sh              # Full validation + deploy
+./scripts/deploy.sh --skip-tests # Skip tests (if already validated)
+./scripts/validate.sh            # Validation only (no deploy)
 ```
 
-**Mode 2: GitHub Actions (Standard)**:
+**Mode 2: GitHub Actions (Recommended)**:
 ```bash
 git add agent/
 git commit -m "feat: nova funcionalidade"
@@ -252,16 +274,7 @@ terraform validate
 - `.promtps_iniciais/proposta_inicial.md` - Product vision
 - `.promtps_iniciais/proposta_técnica.md` - AWS architecture
 
-## ⚠️ Common Pitfalls
-
-**DON'T**:
-- ❌ Suggest OpenSearch for Memory
-- ❌ Mix Memory (sessions) with Knowledge Base (RAG)
-- ❌ Use outdated Bedrock Agent APIs
-- ❌ Deploy without checking AWS Pricing
-- ❌ Skip tests before committing
-- ❌ Guess library APIs (use Context7)
-- ❌ Use UTF-8 BOM in PowerShell scripts
+## ⚠️ CoPowerShell when bash is available
 
 **DO**:
 - ✅ Use MemoryClient SDK
@@ -271,16 +284,30 @@ terraform validate
 - ✅ Consider cost implications
 - ✅ Use IaC (Terraform)
 - ✅ Use TODO tool for complex tasks
-- ✅ Use ASCII-safe chars in PS1 files
+- ✅ Use bash scripts (Git Bash is default)
+**DO**:
+- ✅ Use MemoryClient SDK
+- ✅ Verify APIs with Context7
+- ✅bash
+# Dev local (background)
+./scripts/dev.sh
 
-## 🚀 Quick Commands
+# Deploy manual
+./deploy.sh
 
-```powershell
-# Dev local
-cd agent && uv run agentcore dev
+# Validação completa
+./scripts/validate.sh
 
-# Deploy manual (WSL)
-.\deploy.ps1
+# Status do agent
+cd agent && agentcore status
+
+# Logs em tempo real
+aws logs tail /aws/bedrock-agentcore/runtimes/nagent-GcrnJb6DU5-DEFAULT --follow
+
+# Test em produção
+agentcore invoke "test message" \
+  --session-id "test-session-$(uuidgen)" \
+  --user-id "test-user"
 
 # Validação
 .\scripts\validate-pre-deploy.ps1

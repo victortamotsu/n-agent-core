@@ -134,7 +134,7 @@ class AgentCoreMemory:
                         content = msg.get("content", "")
                         if isinstance(content, dict):
                             content = content.get("text", str(content))
-                        
+
                         memories.append(
                             {
                                 "content": content,
@@ -222,12 +222,11 @@ class AgentCoreMemory:
             for i, mem in enumerate(memories, 1):
                 score = mem.get("score", 0.0)
                 # Extract text from content (can be dict with 'text' key or string)
-                content = mem.get('content', '')
+                content = mem.get("content", "")
                 if isinstance(content, dict):
-                    content = content.get('text', str(content))
+                    content = content.get("text", str(content))
                 context_parts.append(
-                    f"{i}. [{mem['role']}] {content} "
-                    f"(relevance: {score:.2f})"
+                    f"{i}. [{mem['role']}] {content} (relevance: {score:.2f})"
                 )
 
         return "\n".join(context_parts) if context_parts else ""

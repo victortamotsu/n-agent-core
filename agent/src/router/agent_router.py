@@ -200,9 +200,9 @@ Responda APENAS uma palavra: TRIVIAL, INFORMATIVE, COMPLEX ou CRITICAL.""",
         if trip_context:
             context_info = f"""
 CONTEXTO DA VIAGEM:
-- Status: {trip_context.get('status', 'KNOWLEDGE')}
-- Destinos: {', '.join(trip_context.get('destinations', []))}
-- Datas: {trip_context.get('start_date')} → {trip_context.get('end_date')}
+- Status: {trip_context.get("status", "KNOWLEDGE")}
+- Destinos: {", ".join(trip_context.get("destinations", []))}
+- Datas: {trip_context.get("start_date")} → {trip_context.get("end_date")}
 """
 
         return f"""

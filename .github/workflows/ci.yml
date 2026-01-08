@@ -128,13 +128,10 @@ jobs:
     name: Deploy Infrastructure via Terraform
     runs-on: ubuntu-latest
     needs: changes
-    # Deploy runs if infra, agent, or lambdas changed AND on main branch
-    if: |
-      github.ref == 'refs/heads/main' && 
-      github.event_name == 'push' &&
-      (needs.changes.outputs.infra == 'true' || 
-       needs.changes.outputs.agent == 'true' ||
-       needs.changes.outputs.lambdas == 'true')
+    # TEMPORARIAMENTE DESABILITADO - Deploy manual via scripts/provision.sh
+    # Novos módulos (Cognito, API Gateway, Lambda BFF) requerem variáveis adicionais
+    # TODO: Adicionar secrets: COGNITO_*, API_GATEWAY_*, LAMBDA_BFF_*
+    if: false
     timeout-minutes: 30
     
     steps:

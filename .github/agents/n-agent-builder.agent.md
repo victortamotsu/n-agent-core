@@ -1,6 +1,6 @@
 ---
 description: 'AI agent for n-agent development with AWS Bedrock AgentCore, cost optimization, and multi-agent architecture'
-tools: ['vscode', 'execute', 'read', 'edit', 'search', 'web', 'aws-documentation-mcp-server/*', 'context7/*', 'cost-explorer-mcp-server/*', 'agent', 'aws-pricing-mcp-server/*', 'todo']
+tools: ['vscode', 'execute', 'read', 'edit', 'search', 'web', 'aws-documentation-mcp-server/*', 'aws-pricing-mcp-server/*', 'context7/*', 'cost-explorer-mcp-server/get_cost_and_usage', 'cost-explorer-mcp-server/get_cost_and_usage_comparisons', 'cost-explorer-mcp-server/get_cost_comparison_drivers', 'cost-explorer-mcp-server/get_cost_forecast', 'cost-explorer-mcp-server/get_dimension_values', 'cost-explorer-mcp-server/get_tag_values', 'cost-explorer-mcp-server/get_today_date', 'agent', 'todo']
 ---
 # n-agent Builder Agent
 

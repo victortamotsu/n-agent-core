@@ -31,6 +31,12 @@ provider "aws" {
   }
 }
 
+# Map OAuth variables (google_oauth_client_id -> google_client_id)
+locals {
+  google_client_id        = var.google_oauth_client_id != "" ? var.google_oauth_client_id : var.google_client_id
+  google_client_secret    = var.google_oauth_client_secret != "" ? var.google_oauth_client_secret : var.google_client_secret
+}
+
 # Cognito User Pool for authentication
 module "cognito" {
   source = "../../modules/cognito"
@@ -49,8 +55,8 @@ module "cognito" {
   ]
 
   # OAuth Providers (optional)
-  google_client_id        = var.google_client_id
-  google_client_secret    = var.google_client_secret
+  google_client_id        = local.google_client_id
+  google_client_secret    = local.google_client_secret
   microsoft_client_id     = var.microsoft_client_id
   microsoft_client_secret = var.microsoft_client_secret
   microsoft_tenant_id     = var.microsoft_tenant_id
@@ -91,7 +97,8 @@ module "lambda_bff" {
   agentcore_agent_alias_id = var.agentcore_agent_alias_id
   agentcore_agent_arn      = var.agentcore_agent_arn
 
-  api_gateway_execution_arn = module.api_gateway.api_execution_arn
+  # Note: API Gateway integration will be created after both modules are provisioned
+  api_gateway_execution_arn = "" # Will be set after first apply
   aws_region                = var.aws_region
 
   tags = {
@@ -99,26 +106,26 @@ module "lambda_bff" {
   }
 }
 
-# API Gateway Integrations
-resource "aws_apigatewayv2_integration" "lambda_bff" {
-  api_id           = module.api_gateway.api_id
-  integration_type = "AWS_PROXY"
-  integration_uri  = module.lambda_bff.function_invoke_arn
-
-  integration_method     = "POST"
-  payload_format_version = "2.0"
-  timeout_milliseconds   = 30000
-}
-
-resource "aws_apigatewayv2_route" "chat" {
-  api_id    = module.api_gateway.api_id
-  route_key = "POST /chat"
-
-  authorization_type = "JWT"
-  authorizer_id      = module.api_gateway.authorizer_id
-
-  target = "integrations/${aws_apigatewayv2_integration.lambda_bff.id}"
-}
+# API Gateway Integrations (commented out - will be added after first apply)
+# resource "aws_apigatewayv2_integration" "lambda_bff" {
+#   api_id           = module.api_gateway.api_id
+#   integration_type = "AWS_PROXY"
+#   integration_uri  = module.lambda_bff.function_invoke_arn
+#
+#   integration_method     = "POST"
+#   payload_format_version = "2.0"
+#   timeout_milliseconds   = 30000
+# }
+#
+# resource "aws_apigatewayv2_route" "chat" {
+#   api_id    = module.api_gateway.api_id
+#   route_key = "POST /chat"
+#
+#   authorization_type = "JWT"
+#   authorizer_id      = module.api_gateway.authorizer_id
+#
+#   target = "integrations/${aws_apigatewayv2_integration.lambda_bff.id}"
+# }
 
 # Use root module configuration (existing infrastructure)
 module "infrastructure" {

@@ -130,10 +130,11 @@ jobs:
           agentcore status || echo "Status check failed"
       
       - name: Run Production Tests
+        working-directory: agent
         run: |
           echo "🧪 Running production test suite..."
-          chmod +x scripts/test-production.sh
-          ./scripts/test-production.sh production
+          chmod +x ../scripts/test-production.sh
+          cd .. && ./scripts/test-production.sh production
       
       - name: Output CloudWatch logs
         if: always()

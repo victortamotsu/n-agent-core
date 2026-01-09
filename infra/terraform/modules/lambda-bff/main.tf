@@ -18,8 +18,8 @@ terraform {
 # Data source for packaging Lambda code
 data "archive_file" "lambda_zip" {
   type        = "zip"
-  source_dir  = "${path.module}/../../../lambdas/bff/src"
-  output_path = "${path.module}/../../../lambdas/bff/lambda.zip"
+  source_dir  = "${path.module}/../../../../lambdas/bff/src"
+  output_path = "${path.module}/../../../../lambdas/bff/lambda.zip"
 }
 
 # IAM Role for Lambda

@@ -338,12 +338,51 @@ Fast (2-3 days)
 
 ## Phase 1: Foundation (Weeks 1-4)
 
-| Week | Deliverable | Success Criteria |
-|------|-------------|-----------------|
-| 1 | Monorepo Setup + CI/CD | Automatic Lambda "Hello World" deployment |
-| 2 | Base Infrastructure (Terraform/CDK) | DynamoDB + S3 + API Gateway working |
-| 3 | Auth (Cognito) + basic BFF | Functional login on frontend |
-| 4 | WhatsApp Module | Bot responds "Hi" via Webhook |
+| Week | Deliverable | Success Criteria | Status |
+|------|-------------|-----------------|--------|
+| 1 | Monorepo Setup + CI/CD | Automatic Lambda "Hello World" deployment | ✅ **COMPLETE** (Jan 2-4, 2026) |
+| 2 | Base Infrastructure (Terraform/CDK) | DynamoDB + S3 + API Gateway working | ✅ **COMPLETE** (Jan 6-8, 2026) |
+| 3 | Auth (Cognito) + basic BFF | Functional login on frontend | 🔄 In Progress |
+| 4 | WhatsApp Module | Bot responds "Hi" via Webhook | 📋 Planned |
+
+### Week 2 Completion Summary (Jan 6-8, 2026)
+
+**Infrastructure Deployed Successfully** ✅
+
+- **API Gateway HTTP API**
+  - Endpoint: `https://5ul5bax4s9.execute-api.us-east-1.amazonaws.com/prod`
+  - API ID: `5ul5bax4s9`
+  - JWT Cognito Authorizer: Configured (conditional creation)
+
+- **Amazon Cognito User Pool**
+  - Pool ID: `us-east-1_sztMWSEm4`
+  - Client ID: `4e0reesiair18vo4ebfjp1d73q`
+  - OAuth Domain: `https://n-agent-core-prod.auth.us-east-1.amazoncognito.com`
+  - OAuth Providers: Google, Microsoft (configured)
+
+- **Lambda BFF**
+  - Function Name: `n-agent-core-bff-prod`
+  - Runtime: Python 3.12
+  - Integration: AgentCore Runtime (`nagent-GcrnJb6DU5`)
+
+- **CI/CD Pipeline**
+  - Conditional execution: Deploys only when `infra/` changes detected
+  - Terraform: Version 1.6.0 with S3 backend
+  - State: `s3://n-agent-terraform-state`
+  - Locks: DynamoDB `n-agent-terraform-locks`
+
+**Technical Challenges Resolved:**
+1. ✅ Cost optimization validation (AgentCore $0.60/month, not $79)
+2. ✅ JWT Authorizer issuer format (URL vs ARN)
+3. ✅ Lambda reserved environment variables (AWS_REGION)
+4. ✅ Terraform path resolution for Lambda archives
+5. ✅ Conditional resource creation (authorizer only with Cognito)
+
+**Next Steps for Week 3:**
+- Enable API Gateway → Lambda BFF integrations
+- Configure protected routes with JWT authorizer
+- Test OAuth authentication flow (Google/Microsoft)
+- Create basic frontend authentication UI
 
 ## Phase 2: Core AI (Weeks 5-8)
 
@@ -495,6 +534,30 @@ User Input → Router Agent (Nova Micro - Classify intent)
 | Vision | 5% | $3.00 (Claude) | Low |
 
 **Result**: ~76% cost reduction compared to using Claude for all tasks.
+
+### ⚠️ AgentCore Runtime Pricing - CRITICAL UPDATE (Jan 2026)
+
+**Initial Assumption (WRONG):** $79/month for 24/7 deployment  
+**Reality (VERIFIED):** ~$0.60/month with consumption-based billing
+
+**AWS Bedrock AgentCore Runtime Pricing:**
+- **vCPU**: $0.0895 per vCPU-hour
+- **Memory**: $0.00945 per GB-hour
+- **Idle Timeout**: 30 minutes (auto-shutdown when inactive)
+- **Billing Model**: Pay only when agent is actively processing requests
+
+**Real Usage Data** (Jan 2-8, 2026):
+- vCPU: 0.01 hours/day
+- Memory: 0.75 GB-hours/day
+- Cost: ~$0.02/day = **$0.60/month**
+
+**Key Insight**: AgentCore is NOT billed 24/7. It auto-shuts down after 30min of inactivity and only charges during active processing time. This makes it extremely cost-effective for serverless architectures.
+
+**Cost Validation Process**:
+1. Check real usage via Cost Explorer (not just pricing tables)
+2. Read service documentation about lifecycle/billing model
+3. Verify idle timeout and auto-shutdown behavior
+4. NEVER assume "deployed" = "running 24/7"
 
 ---
 

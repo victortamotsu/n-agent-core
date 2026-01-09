@@ -31,12 +31,6 @@ provider "aws" {
   }
 }
 
-# Map OAuth variables (google_oauth_client_id -> google_client_id)
-locals {
-  google_client_id        = var.google_oauth_client_id != "" ? var.google_oauth_client_id : var.google_client_id
-  google_client_secret    = var.google_oauth_client_secret != "" ? var.google_oauth_client_secret : var.google_client_secret
-}
-
 # Cognito User Pool for authentication
 module "cognito" {
   source = "../../modules/cognito"
@@ -54,9 +48,9 @@ module "cognito" {
     "https://app.n-agent.com"
   ]
 
-  # OAuth Providers (optional)
-  google_client_id        = local.google_client_id
-  google_client_secret    = local.google_client_secret
+  # OAuth Providers (optional) - use google_oauth_* variables directly from workflow
+  google_client_id        = var.google_oauth_client_id
+  google_client_secret    = var.google_oauth_client_secret
   microsoft_client_id     = var.microsoft_client_id
   microsoft_client_secret = var.microsoft_client_secret
   microsoft_tenant_id     = var.microsoft_tenant_id

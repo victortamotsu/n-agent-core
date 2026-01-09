@@ -42,15 +42,42 @@ tools: ['vscode', 'execute', 'read', 'edit', 'search', 'web', 'aws-documentation
 @context7 query-docs /aws/bedrock-agentcore-sdk-python "memory session management"
 ```
 
-### 3. Check AWS Docs & Pricing
+### 3. AWS Cost Analysis - CRITICAL PROCESS
+
+**⚠️ NEVER estimate costs without validating with real data or documentation first**
+
+**MANDATORY ORDER for any cost-related question**:
 
 ```bash
-# Documentation
-@aws-docs search-documentation "Bedrock AgentCore Memory API"
+# Step 1: ALWAYS check real costs FIRST (if service already running)
+@cost-explorer get_cost_and_usage --date-range "start" "end" --group-by SERVICE
 
-# Pricing (always before suggesting services)
-@aws-pricing get-pricing-service-codes --filter "bedrock"
-@aws-pricing get-pricing AWSLambda us-east-1
+# Step 2: Check service configuration/behavior
+agentcore status  # or equivalent command for the service
+# Read ENTIRE output - look for: idle timeout, auto-shutdown, consumption model
+
+# Step 3: Read AWS Docs about pricing MODEL and lifecycle
+@aws-docs search-documentation "AgentCore Runtime pricing consumption-based lifecycle"
+
+# Step 4: Get official pricing rates
+@aws-pricing get-pricing-service-codes --filter "service-name"
+@aws-pricing get-pricing ServiceCode region
+
+# Step 5: ONLY NOW make projections (with clear assumptions)
+```
+
+**CRITICAL ASSUMPTIONS TO VALIDATE**:
+- ❌ NEVER assume "deployed" = "running 24/7"
+- ❌ NEVER use pricing table alone without understanding service behavior
+- ✅ ALWAYS check for: idle timeout, auto-shutdown, consumption-based billing
+- ✅ ALWAYS verify real usage data before projecting costs
+- ✅ ALWAYS read complete command outputs (don't skip configuration details)
+
+**Example - AgentCore Runtime**:
+```
+❌ WRONG: $0.0895/vCPU-hour × 24h × 30d = $64/month (assumes 24/7)
+✅ RIGHT: Check agentcore status → "Idle Timeout: 30min" → Only charges when active
+         Real usage: 0.01 vCPU-hours/day = $0.02/day = $0.60/month
 ```
 
 ### 4. Shell Scripts Best Practices

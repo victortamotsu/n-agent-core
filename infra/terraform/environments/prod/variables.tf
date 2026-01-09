@@ -132,18 +132,3 @@ variable "agentcore_agent_arn" {
   type        = string
   default     = "arn:aws:bedrock-agentcore:us-east-1:944938120078:runtime/nagent-GcrnJb6DU5"
 }
-
-# Cognito OAuth (map existing variables)
-variable "google_client_id" {
-  description = "Google OAuth client ID (alias)"
-  type        = string
-  default     = ""
-  sensitive   = true
-}
-
-variable "google_client_secret" {
-  description = "Google OAuth client secret (alias)"
-  type        = string
-  default     = ""
-  sensitive   = true
-}

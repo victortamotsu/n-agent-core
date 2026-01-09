@@ -1,448 +1,282 @@
-# n-agent - Assistente pessoal de viagens
+# n-agent - Personal Travel Assistant
 
-Vamos criar uma plataforma de criação e configuração de um agente pessoal que vai ter capacidade de conectar em serviços e ajudar na organização pessoal e de trabalho de uma pessoa em idade produtiva. 
+We are creating a platform for creating and configuring a personal agent that will have the ability to connect to services and help with the personal and work organization of a person in productive age.
 
-# Ideia geral
+# General Idea
 
-Um serviço de plataforma que vende pacotes de um assistente pessoal para organização de atividades em agendas de viagens.  
+A platform service that sells packages of a personal assistant for organizing activities in travel schedules.
 
-O objetivo é apoiar pessoas normais a entender, estruturar, organizar a viagem. Também, vai oferecer serviços relacionado a turismo dentro da plataforma.
-
----
-
-# Glossário e Definições
-
-## Entidades Principais
-
-| Termo | Definição |
-|-------|-----------|
-| **Viagem** | Um evento de viagem com datas de início, fim, destinos, calendário, documentos, etc. Uma viagem pode ter uma ou mais pessoas que fazem parte dela (os participantes). Uma viagem deve ser criada e estar sempre vinculada a uma conta de usuário pagante. |
-| **Participante da Viagem** | Pessoas que fazem parte de uma viagem. Não precisam necessariamente ter uma conta de usuário; podem ser pessoas indicadas pelo administrador da viagem que ainda não possuem uma conta, sendo identificadas unicamente no sistema para posteriormente terem uma conta vinculada. |
-| **Pessoa** | Representa uma pessoa física. Este objeto serve para ligar uma menção de uma pessoa a uma atividade ou a uma viagem. Uma pessoa pode ou não ter uma conta de usuário vinculada no sistema. Exemplo: Victor é a pessoa com uma conta de usuário pagante que criou a viagem e registrou a Fabiola e o Vicenzo como pessoas que vão participar da viagem. Vicenzo tem uma conta de usuário vinculada pelo e-mail, enquanto Fabiola não existe no sistema ainda e pode ser convidada por e-mail ou por link compartilhado. |
-| **Conta de Usuário** | Uma conta do sistema vinculada a uma pessoa, em uma relação 1:1. A conta de usuário possui acesso à interface web e dá a possibilidade de contratar serviços dentro da plataforma. A conta de usuário é de fato um usuário com e-mail e/ou WhatsApp vinculado e validado. |
-| **Conta Pagante** | Uma conta de usuário que contratou um dos planos pagos da plataforma. Para se transformar em conta pagante, é necessário finalizar o cadastro do usuário com endereço, CPF, cartão de crédito. |
-
-## Perfis e Contexto
-
-| Termo | Definição |
-|-------|-----------|
-| **Perfil de Pessoa** | Dados relacionados a uma pessoa. O perfil são informações dadas por usuários de uma viagem e persistidas no banco de dados pelo agente de IA para tomar decisões e informar opções e sugestões. Por exemplo: O usuário Victor comentou que a pessoa Fabiola tem 42 anos, que gosta de atrações culturais e que quer visitar a Catedral de Notre Dame durante a viagem. Estas informações devem ser compiladas pelo agente e armazenadas como parte do perfil de pessoa da Fabiola em seções diferentes (idade e gosto na seção de propriedades, vontade de visitar na seção correspondente à viagem). **Nota**: O informante precisa ser um usuário da mesma viagem para que as informações sejam consideradas válidas. |
-| **Perfil da Viagem** | Dados relacionados a uma viagem. O perfil são informações dadas pelos usuários e persistidas no banco de dados pelo agente de IA para a tomada de decisões e informar opções da viagem. Estas informações devem ser compiladas pelo agente e armazenadas como parte do perfil da viagem. |
+The goal is to support ordinary people to understand, structure, and organize their travel. It will also offer tourism-related services within the platform.
 
 ---
 
-# Modelo de Negócio e Monetização
+# Glossary and Definitions
 
-## Planos e Pricing
+## Main Entities
 
-| Plano | Preço | Limites | Funcionalidades |
-|-------|-------|---------|-----------------|
-| **Gratuito** | R$ 0 | 1 viagem/ano, até 4 pessoas | Fases 1-2 (Conhecimento + Planejamento básico), sem concierge |
-| **Planejador** | R$ 49/viagem | Ilimitado pessoas, 1 viagem ativa | Fases 1-3, documentos ricos, versionamento de roteiros |
-| **Concierge** | R$ 149/viagem | Ilimitado pessoas, 3 viagens ativas | Todas as fases, alertas em tempo real, suporte prioritário |
-| **Família (Anual)** | R$ 399/ano | Até 5 viagens/ano, ilimitado pessoas | Tudo do Concierge + desconto em parceiros |
+| Term | Definition |
+|------|------------|
+| **Trip** | A travel event with start and end dates, destinations, calendar, documents, etc. A trip can have one or more people who are part of it (the participants). A trip must be created and always linked to a paying user account. |
+| **Trip Participant** | People who are part of a trip. They do not necessarily need to have a user account; they can be people indicated by the trip administrator who do not yet have an account, being uniquely identified in the system to later have an account linked. |
+| **Person** | Represents a natural person. This object serves to link a mention of a person to an activity or a trip. A person may or may not have a linked user account in the system. Example: Victor is the person with a paying user account who created the trip and registered Fabiola and Vicenzo as people who will participate in the trip. Vicenzo has a user account linked by email, while Fabiola does not exist in the system yet and can be invited by email or shared link. |
+| **User Account** | A system account linked to a person in a 1:1 relationship. The user account has access to the web interface and gives the possibility to contract services within the platform. The user account is in fact a user with an email and/or WhatsApp linked and validated. |
+| **Paying Account** | A user account that contracted one of the platform's paid plans. To become a paying account, it is necessary to complete the user registration with address, CPF, credit card. |
 
-## Fontes de Receita Adicionais
+## Profiles and Context
 
-1. **Comissões de Afiliados**: 3-8% em reservas via links de Booking/Airbnb/Skyscanner
-2. **Serviços Premium**: Impressão de álbum de memórias (R$ 89-199)
-3. **Parcerias B2B**: Agências de viagem usando a plataforma white-label
-4. **Upsell de Seguros**: Comissão em seguros viagem vendidos via plataforma
-
-## KPIs de Sucesso do MVP
-
-| Métrica | Meta 6 meses | Meta 12 meses |
-|---------|--------------|---------------|
-| Usuários cadastrados | 1.000 | 5.000 |
-| Conversão Free → Paid | 8% | 12% |
-| NPS pós-viagem | > 40 | > 50 |
-| Retenção (2ª viagem) | 30% | 45% |
-| Receita média/usuário pago | R$ 80 | R$ 120 |
+| Term | Definition |
+|------|------------|
+| **Person Profile** | Data related to a person. The profile is information provided by users of a trip and persisted in the database by the AI agent to make decisions and provide options and suggestions. For example: User Victor mentioned that person Fabiola is 42 years old, that she likes cultural attractions and wants to visit Notre-Dame Cathedral during the trip. This information should be compiled by the agent and stored as part of Fabiola's person profile in different sections (age and taste in the properties section, desire to visit in the section corresponding to the trip). **Note**: The informant needs to be a user of the same trip for the information to be considered valid. |
+| **Trip Profile** | Data related to a trip. The profile is information provided by users and persisted in the database by the AI agent for decision making and providing trip options. This information should be compiled by the agent and stored as part of the trip profile. |
 
 ---
 
-# Requisitos funcionais
+# Business Model and Monetization
 
-## Interface com o usuário
+## Plans and Pricing
 
-### Interação do site
+| Plan | Price | Limits | Features |
+|------|-------|--------|----------|
+| **Free** | $0 | 1 trip/year, up to 4 people | Phases 1-2 (Knowledge + Basic Planning), no concierge |
+| **Planner** | $49/trip | Unlimited people, 1 active trip | Phases 1-3, rich documents, itinerary versioning |
+| **Concierge** | $149/trip | Unlimited people, 3 active trips | All phases, real-time alerts, priority support |
+| **Family (Annual)** | $399/year | Up to 5 trips/year, unlimited people | Everything from Concierge + partner discounts |
 
-Teremos um site web público para:
+## Additional Revenue Sources
 
-1. divulgação do produto
-2. contratação do serviço
-3. painel de controle do usuário e visualização de documentos de resposta de conteúdo rico da IA (veja mais detalhes abaixo) 
-4. painel de controle de parceiros/fornecedores
-5. painel de controle de administradores
-6. Central de Ajuda e FAQ Dinâmico: Uma área onde dúvidas comuns sobre o uso da IA são respondidas automaticamente.
+1. **Affiliate Commissions**: 3-8% on reservations via Booking/Airbnb/Skyscanner links
+2. **Premium Services**: Memory album printing ($89-199)
+3. **B2B Partnerships**: Travel agencies using the platform white-label
+4. **Travel Insurance Upsell**: Commission on travel insurance sold via platform
 
-Os usuários poderão receber respostas da IA no formato de relatórios com conteúdo ricos, como imagens de mapas, links, tabelas, informações de preços, etc. Vamos usar a estrutura do site para exibir este conteúdo para o usuário.
+## MVP Success KPIs
 
-[Dúvida] Deveríamos ter um app mobile para capturar a localização, dando mais informações sobre a viagem para o agente? Assim, conseguimos mais contexto. [Todo] Se seguirmos por este caminho, como trabalhar a privacidade dos dados?
-
-### Interação padrão do usuário
-
-Os inputs do usuário se dará exclusivamente via chat com a IA "n-agent" e via interface web para pequenas rotinas (como finalização de itens em listas de tarefas). O chat se dará em duas interfaces: **chat via interface web** (MVP) e chat via WhatsApp (pós-MVP, aguardando aprovação Meta). Ambas interfaces devem suportar os seguintes tipos de input:
-
-> **📝 Nota MVP**: A integração com WhatsApp foi movida para pós-MVP pois a Meta ainda não liberou o acesso à API. Ver [MVP_SCOPE_UPDATE.md](./fases_implementacao/MVP_SCOPE_UPDATE.md)
-    
-- texto (o mais comum, com suporte a emoticons, links e formatação MD)
-- imagens 
-- áudio
-- localização
-- documentos
-
-Interfaces especiais:
-
-- O usuário pode encaminhar e-mails (ex: confirmações de reserva) diretamente para um e-mail do bot. O reconhecimento da viagem se dará por contexto (endereço de e-mail do usuário e data da ação descrita).
-- O usuário poderá encaminhar mensagens de outros usuários via encaminhamento do Whatsapp para o bot guardar os registros. Por exemplo: "fiz a reserva do observatório The Edge para 23/05 para todos nós". 
-
-
-Os outputs podersão ser:
-
-- texto (com suporte a emoticons, links e formatação)
-- localização (um link para abertura do aplicativo de localização padrão do celular, como o Google Maps ou Apple Map)
-- Link para um documento rico, gerado e exibido em uma interface web com a resposta a solicitação do usuário.
-- Listas de tarefas ou dúvidas
-- Botões de Ação Rápida (Quick Replies): No WhatsApp e Web, oferecer botões como "Confirmar", "Ver Mais Detalhes", "Alterar Roteiro" para agilizar a interação e evitar digitação.
-
-## Integrações e capacidades do agente
-
-Vamos dividir este projeto em fases, sendo a fase atual o MVP do produto. Nesta primeira fase o agente deve ter as seguintes capacidades:
-
-1. Fase de conhecimento do cliente e da viagem: é a fase onde montamos um dossiê de informações sobre a viagem, acompanhantes, objetivos (pessoais e do grupo de viagem), destinos, itinerário desejado, budget e datas. Estas informações devem ser persistidas e devem permear todas as fases posteriores.
-    - [Requisito Adicional] Perfilamento de Risco e Acessibilidade: Identificar restrições alimentares, alergias, dificuldades de locomoção (acessibilidade) ou medos (ex: medo de avião) dos integrantes.
-    - Entender restrições de locais e atrações por pessoa ou para todo o grupo. Por exemplo: medo de lugares fechados, medo de altura. Isso não deve limitar as sugestões, mas deve ajudar no rankeamento das opções.
-2. Fase de planejamento da viagem: usando as informações do passo anterior, devemos estudar os requisitos para atingir os objetivos da viagem. Devemos apresentar um resumo das atrações e um detalhamento dos custos e esforços de atingir os objetivos, com timelines e riscos, para auxiliar na tomada de decisão dos roteiros. Esta é a fase mais complicada porque a viagem ainda pode estar em momento de definição da quantidade de destinos, quantidade de pessoas, etc. Devemos usar todas as ferramentas possíveis para diminuir custos e oferecer experiências condizentes com os objetivos dos usuários.
-    - [Requisito Adicional] Versionamento de Roteiros: O sistema deve permitir salvar "Versão A (Econômica)" e "Versão B (Conforto)" para comparação lado a lado. Também tem que guardar versões das alterações dos roteiros para ajudar a entender motivações das alterações do roteiro.
-    - [Dúvida] Seria possível criar um roteiro onde os administradores do roteiro recebem sugestões de outros usuários e avaliam as sugestões para então incrementar no roteiro base? Por exemplo: o filho sugere uma adição de passar em uma livraria. O pai recebe esta alteração, com a IA calculando os impactos desta mudança no roteiro.
-3. Fase de contratação de serviços e gestão da viagem: é a fase onde vamos começar a concretizar a viagem, organizando os momentos certos de contratar serviços e organizar as informações da viagem, sempre com o cuidado de revisar cada aspecto da viagem para antecipar problemas para evitar transtornos para os usuários. Vamos guardar cada aspecto da viagem: agenda, locais, ingressos, custos, documentos, informações sobre os locais de visita, serviços contratados, etc.
-    - [Sugestão] Gestão de Vouchers Offline: Garantir que todos os PDFs e QRCodes essenciais sejam enviados para o WhatsApp, Google Drive ou e-mail para acesso mesmo sem internet.
-4. Fase de execução da viagem (concierge): nesta fase já temos todos os serviços definidos e viagem começou! Vamos desde o início auxiliar a visita com resumos do roterio, mensagens com lembretes e informações, chat para tirar dúvidas ou auxiliar em casos de incidentes. A IA entraria em contato um pouco antes de cada evento para dar insights e informações para auxiliar em momentos chave, como o link para um ingresso um pouco antes do momento de entrar na atração ou informações sobre o portão de embarque e como fazer para chegar até o local. 
-    - [Requisito Crítico] Modo Offline/Baixa Conexão: A IA deve saber quando o usuário pode estar sem internet e enviar pacotes de informação (resumo do dia seguinte) com antecedência via WhatsApp.
-    - [Requisito Adicional] Fuso Horário Inteligente: O agente deve considerar proativamente o jet lag e ajustar sugestões de atividades no primeiro dia, além de saber o horário local exato para envio de alertas.
-6. Fase de organização de memórias: aqui a plataforma vai trabalhar com a montagem de informações sobre a viagem, organizando albúns, locais no mapa, informações da viagem para preseravar a memória do usuário e de seu grupo.
-
-Para realizar estas capacidades, temos que entregar as seguintes ferramentas para a plataforma:
-
-- Um conjunto de agentes capazes de trabalhar com as ferramentas de trabalho necessárias para atender a plataforma e para performar análise crítica do pedido do usuário.
-- Ferramentas compartilhadas da plataforma: contexto rápido, local para guardar dados persistentes, ferramenta para armazenas tarefas preenchidas para controle da IA, seleção de IA
-- Ferramentas de mapas: Google Maps
-- Ferramentas de recomendação e ranking: TripAdvisor, Google Maps, Booking,Blogs de viagem do Google Search
-- Ferramentas para hospedagem: AirBnB, Booking, Kayak, Trivago
-- Ferramentas para passagens: Kayak, Google Flights, Sky Scanner, ViajaNet, MaxMilhas
-- Regras de viagem para países: Sherpa
-- Integração com aeroportos para identificar status de voos
-- Fontes de dicas que estão na moda: Instagram, Youtube
-- Integração com 
-    - Whatsapp para interface com o usuário, 
-    - Google Maps para apresentação/criação de marcadores de visita, 
-    - Integração com Google Calendar ou Outlook para gestão da agenda da visita,
-    - Integração com aplicativos de notas e tarefas, como o Google Keep, Microsoft Todo e Evernote para criação de listas com tarefas para os integrantes do grupo de viagem.
-    - Integrações com serviço de clima e canais do Youtube com informações para viajantes da época visitada
-    - [Nova Integração] Câmbio e Conversão: API para cotação de moedas em tempo real (ex: Open Exchange Rates) para ajudar na decisão de compras.
-    - [Nova Integração] Serviços de Tradução: Integração com DeepL ou Google Translate API para tradução automática de cardápios via foto ou negociações locais.
-    - [Nova Integração] Clima e Alertas: APIs meteorológicas (ex: OpenWeather) para avisar sobre chuva e sugerir roteiros alternativos indoor automaticamente.
+| Metric | 6-month Target | 12-month Target |
+|--------|----------------|-----------------|
+| Registered Users | 1,000 | 5,000 |
+| Free → Paid Conversion | 8% | 12% |
+| Post-trip NPS | > 40 | > 50 |
+| Retention (2nd trip) | 30% | 45% |
+| Average Revenue per Paying User | $80 | $120 |
 
 ---
 
-# Arquitetura Multi-Agent
+# Functional Requirements
 
-## Visão Geral
+## User Interface
 
-O "agente" n-agent é na verdade uma **solução multi-agent**, com nós especializados e otimizados para tarefas específicas necessárias para a plataforma atender seus usuários.
+### Website Interaction
 
-## Agentes Especializados
+We will have a public website for:
 
-| Agente | Responsabilidade | Modelo Sugerido |
-|--------|------------------|-----------------|
-| **Router Agent** | Classifica a intenção do usuário e roteia para o agente especializado | Nova Micro |
-| **Profile Agent** | Extrai e persiste informações de perfis de pessoa e viagem durante conversas | Nova Lite |
-| **Planner Agent** | Cria e otimiza roteiros de viagem | Nova Pro / Gemini |
-| **Search Agent** | Busca informações em tempo real (hospedagens, voos, atrações) | Gemini + Search |
-| **Concierge Agent** | Monitora viagens ativas e dispara alertas/lembretes | Nova Lite |
-| **Document Agent** | Gera documentos ricos (roteiros, vouchers, relatórios) | Claude 3.5 Sonnet |
-| **Vision Agent** | Processa imagens (OCR de passaportes, documentos) | Claude 3.5 Sonnet |
+1. Product disclosure
+2. Service contracting
+3. User control panel and viewing rich content response documents from the AI (see more details below)
+4. Partner/supplier control panel
+5. Administrator control panel
+6. Dynamic Help Center and FAQ: An area where common questions about AI usage are answered automatically.
 
-## Ferramentas do Agente para Gestão de Perfis
+Users will be able to receive AI responses in the form of reports with rich content, such as maps, links, tables, price information, etc. We will use the website structure to display this content to the user.
 
-O agente deve ter as seguintes ferramentas para gerenciar o contexto e perfis:
+[Question] Should we have a mobile app to capture location, giving more information about the trip for the agent? This way, we get more context. [Todo] If we follow this path, how do we handle data privacy?
 
-### Ferramentas de Leitura (Contexto)
+### Standard User Interaction
 
-| Ferramenta | Descrição |
-|------------|-----------|
-| `get_trip_profile_summary` | Obtém um resumo compacto do perfil da viagem (destinos, datas, budget, status) |
-| `get_trip_profile_details` | Obtém dados detalhados da viagem (roteiro, reservas, documentos, tarefas) |
-| `get_person_profile_summary` | Obtém resumo do perfil de uma pessoa (preferências, restrições, documentos) |
-| `get_person_profile_details` | Obtém dados detalhados de uma pessoa participante da viagem |
-| `get_trip_participants` | Lista todos os participantes de uma viagem com seus papéis |
-| `get_conversation_context` | Obtém contexto recente da conversa para continuidade |
+User inputs will occur exclusively via chat with the "n-agent" AI and via web interface for small routines (such as completing items in task lists). The chat will occur in two interfaces: **web interface chat** (MVP) and WhatsApp chat (post-MVP, awaiting Meta approval). Both interfaces must support the following input types:
 
-### Ferramentas de Escrita (Persistência)
+> **📝 MVP Note**: WhatsApp integration has been moved to post-MVP as Meta has not yet released API access. See [MVP_SCOPE_UPDATE.md](./fases_implementacao/MVP_SCOPE_UPDATE.md)
 
-| Ferramenta | Descrição |
-|------------|-----------|
-| `update_trip_profile` | Atualiza informações do perfil da viagem (destinos, datas, preferências) |
-| `update_person_profile` | Atualiza informações do perfil de uma pessoa (idade, preferências, restrições) |
-| `add_trip_preference` | Adiciona uma preferência ou objetivo à viagem |
-| `add_person_preference` | Adiciona uma preferência ou restrição a uma pessoa |
-| `add_trip_activity` | Adiciona uma atividade desejada ao perfil da viagem |
-| `link_person_to_trip` | Vincula uma pessoa como participante de uma viagem |
+- text (the most common, with support for emoticons, links and MD formatting)
+- images
+- audio
+- location
+- documents
 
-### Fluxo de Extração e Persistência
+Special interfaces:
 
-Durante a conversa, o agente deve:
+- The user can forward emails (e.g., booking confirmations) directly to a bot email. Trip recognition will be done by context (user email address and action date described).
+- The user can forward messages from other users via WhatsApp forwarding to the bot to save records. For example: "I made the reservation at The Edge observatory for 23/05 for all of us".
 
-1. **Analisar** cada mensagem do usuário para identificar informações relevantes
-2. **Classificar** as informações em categorias:
-   - Dados de perfil de pessoa (idade, preferências, restrições)
-   - Dados de perfil de viagem (destinos, datas, budget, objetivos)
-   - Atividades e desejos específicos
-3. **Validar** se o informante tem permissão para adicionar dados (mesmo participante da viagem)
-4. **Persistir** as informações usando as ferramentas apropriadas
-5. **Confirmar** ao usuário que as informações foram registradas
+Users can receive outputs as:
+
+- text (with support for emoticons, links and formatting)
+- location (a link to open the standard location application on the phone, such as Google Maps or Apple Map)
+- Link to a rich document, generated and displayed in a web interface with the response to the user's request.
+- Task lists or questions
+- Quick Action Buttons: On WhatsApp and Web, offer buttons like "Confirm", "See More Details", "Change Itinerary" to speed up interaction and avoid typing.
+
+## Agent Integrations and Capabilities
+
+We will divide this project into phases, the current phase being the product MVP. In this first phase the agent must have the following capabilities:
+
+1. **Knowledge phase** of the client and the trip: this is the phase where we assemble a dossier of information about the trip, companions, objectives (personal and group), destinations, desired itinerary, budget and dates. This information must be persisted and should permeate all subsequent phases.
+    - [Additional Requirement] Risk Profiling and Accessibility: Identify dietary restrictions, allergies, mobility difficulties (accessibility) or fears (e.g., fear of flying) of members.
+    - Understand restrictions on places and attractions by person or for the entire group. For example: fear of closed spaces, fear of heights. This should not limit suggestions, but should help rank options.
+
+2. **Trip planning phase**: using the information from the previous step, we should study the requirements to achieve the trip's objectives. We should present a summary of attractions and a detailed breakdown of costs and efforts to achieve objectives, with timelines and risks, to assist in decision making about itineraries. This is the most complicated phase because the trip may still be in a moment of defining the number of destinations, number of people, etc. We should use all available tools to reduce costs and provide experiences consistent with user objectives.
+    - [Additional Requirement] Itinerary Versioning: The system must allow saving "Version A (Economy)" and "Version B (Comfort)" for side-by-side comparison. It also needs to keep versions of itinerary changes to help understand motivations for itinerary changes.
+    - [Question] Would it be possible to create an itinerary where itinerary administrators receive suggestions from other users and evaluate suggestions to then add to the base itinerary? For example: the son suggests adding a library visit. The father receives this change, with the AI calculating the impacts of this change on the itinerary.
+
+3. **Service contracting and trip management phase**: this is the phase where we will start to concretize the trip, organizing the right moments to contract services and organize trip information, always being careful to review each aspect of the trip to anticipate problems to prevent inconveniences to users. We will save each aspect of the trip: schedule, places, tickets, costs, documents, information about visit locations, contracted services, etc.
+    - [Suggestion] Offline Voucher Management: Ensure that all essential PDFs and QRCodes are sent to WhatsApp, Google Drive, or email for access even without internet.
+
+4. **Trip execution phase (concierge)**: at this phase we have all services defined and the trip has started! We will assist from the beginning with itinerary summaries, messages with reminders and information, chat to answer questions or assist in case of incidents. The AI would contact shortly before each event to provide insights and information to assist at key moments, such as the link to a ticket shortly before entering an attraction or information about the boarding gate and how to get there.
+    - [Critical Requirement] Offline/Low Connection Mode: The AI should know when the user may be without internet and send information packages (next day summary) in advance via WhatsApp.
+    - [Additional Requirement] Intelligent Time Zone: The agent should proactively consider jet lag and adjust activity suggestions on the first day, in addition to knowing the exact local time for sending alerts.
+
+6. **Memory organization phase**: here the platform will work on assembling trip information, organizing albums, map locations, trip information to preserve the user's memory and their group.
+
+To realize these capabilities, we must deliver the following tools to the platform:
+
+- A set of agents capable of working with the necessary work tools to serve the platform and perform critical analysis of the user's request.
+- Shared platform tools: quick context, place to store persistent data, tool to store completed tasks for AI control, AI selection
+- Map tools: Google Maps
+- Recommendation and ranking tools: TripAdvisor, Google Maps, Booking, Travel Blogs from Google Search
+- Accommodation tools: AirBnB, Booking, Kayak, Trivago
+- Flight tools: Kayak, Google Flights, Sky Scanner, ViajaNet, MaxMilhas
+- Travel rules for countries: Sherpa
+- Integration with airports to identify flight status
+- Tips from trending sources: Instagram, Youtube
+- Integrations with
+    - Whatsapp for user interface,
+    - Google Maps for presentation/creation of visit markers,
+    - Integration with Google Calendar or Outlook for trip schedule management,
+    - Integration with notes and task apps, such as Google Keep, Microsoft Todo and Evernote to create lists with tasks for group members.
+    - Integrations with weather service and YouTube channels with information for travelers at the time visited
+    - [New Integration] Currency Exchange: API for real-time currency quotes (e.g., Open Exchange Rates) to help with purchase decisions.
+    - [New Integration] Translation Services: Integration with DeepL or Google Translate API for automatic menu translation via photo or local negotiations.
+    - [New Integration] Weather and Alerts: Weather APIs (e.g., OpenWeather) to warn about rain and suggest alternative indoor itineraries automatically.
 
 ---
 
-# Requisitos técnicos
+# Multi-Agent Architecture
 
-## Infraestrutura e arquitetura
+## Overview
 
-- Toda a plataforma deve ser definida com IaC e infraestrutura 100% AWS, com a maior quantidade de serviços serverless
-- Vamos usar uma estrutura de microserviços Lambda + Bedrock Agents para tornar o ambiente pay as you Go, com foco em otimização de custos vs vantagens das soluções implementadas
-- Banco de dados DynamoDB, com modelagem a seu critério
-- ~~[Sugestão] Cache Strategy (ElastiCache/Redis)~~: **REMOVIDO** - AgentCore Memory já implementa caching de sessões nativamente. Ver [MVP_SCOPE_UPDATE.md](./fases_implementacao/MVP_SCOPE_UPDATE.md)
-- Backend em node, com frontend em React
-- Interface visual respeitando o Material Design M3 Expressive
-- BFF para controle e orquestração das informações
-- endpoint específico para integrações com aplicações terceiras
-- Solução agnóstica ao modelo de IA para processamento do fluxo, usando uma mescla de AWS Nova, Gemini e Claude para as tarefas
-- [Requisito de Segurança] Privacidade e LGPD/GDPR: Como a plataforma lida com dados sensíveis (Passaportes, cartões, dados de menores), é crucial implementar criptografia em repouso e políticas claras de retenção e exclusão de dados.
+The "agent" n-agent is actually a **multi-agent solution**, with nodes specialized and optimized for specific tasks needed for the platform to serve its users.
+
+## Specialized Agents
+
+| Agent | Responsibility | Suggested Model |
+|-------|---|---|
+| **Router Agent** | Classifies user intent and routes to specialized agent | Nova Micro |
+| **Profile Agent** | Extracts and persists person and trip profile information during conversations | Nova Lite |
+| **Planner Agent** | Creates and optimizes travel itineraries | Nova Pro / Gemini |
+| **Search Agent** | Searches real-time information (accommodations, flights, attractions) | Gemini + Search |
+| **Concierge Agent** | Monitors active trips and triggers alerts/reminders | Nova Lite |
+| **Document Agent** | Generates rich documents (itineraries, vouchers, reports) | Claude 3.5 Sonnet |
+| **Vision Agent** | Processes images (OCR of passports, documents) | Claude 3.5 Sonnet |
+
+## Agent Tools for Profile Management
+
+The agent should have the following tools to manage context and profiles:
+
+### Reading Tools (Context)
+
+| Tool | Description |
+|------|---|
+| `get_trip_profile_summary` | Gets a compact summary of the trip profile (destinations, dates, budget, status) |
+| `get_trip_profile_details` | Gets detailed trip data (itinerary, reservations, documents, tasks) |
+| `get_person_profile_summary` | Gets summary of a person's profile (preferences, restrictions, documents) |
+| `get_person_profile_details` | Gets detailed data of a trip participant |
+| `get_trip_participants` | Lists all trip participants with their roles |
+| `get_conversation_context` | Gets recent conversation context for continuity |
+
+### Writing Tools (Persistence)
+
+| Tool | Description |
+|------|---|
+| `update_trip_profile` | Updates trip profile information (destinations, dates, preferences) |
+| `update_person_profile` | Updates a person's profile information (age, preferences, restrictions) |
+| `add_trip_preference` | Adds a preference or objective to the trip |
+| `add_person_preference` | Adds a preference or restriction to a person |
+| `add_trip_activity` | Adds a desired activity to the trip profile |
+| `link_person_to_trip` | Links a person as a trip participant |
+
+### Extraction and Persistence Flow
+
+During conversation, the agent should:
+
+1. **Analyze** each user message to identify relevant information
+2. **Classify** information into categories:
+   - Person profile data (age, preferences, restrictions)
+   - Trip profile data (destinations, dates, budget, objectives)
+   - Specific activities and desires
+3. **Validate** if the informant has permission to add data (same trip participant)
+4. **Persist** information using appropriate tools
+5. **Confirm** to the user that information has been recorded
+
+---
+
+# Technical Requirements
+
+## Infrastructure and Architecture
+
+- The entire platform must be defined with IaC and 100% AWS infrastructure, with the largest amount of serverless services
+- We will use a Lambda + Bedrock Agents microservices structure to make the environment pay-as-you-go, focusing on cost optimization vs advantages of implemented solutions
+- DynamoDB database, with modeling at your discretion
+- ~~[Suggestion] Cache Strategy (ElastiCache/Redis)~~: **REMOVED** - AgentCore Memory already implements native session caching. See [MVP_SCOPE_UPDATE.md](./fases_implementacao/MVP_SCOPE_UPDATE.md)
+- Backend in node, with frontend in React
+- Visual interface respecting Material Design M3 Expressive
+- BFF for control and information orchestration
+- Specific endpoint for integrations with third-party applications
+- Solution agnostic to AI model for flow processing, using a mixture of AWS Nova, Gemini and Claude for tasks
+- [Security Requirement] Privacy and LGPD/GDPR: As the platform handles sensitive data (Passports, cards, minor data), it is crucial to implement encryption at rest and clear data retention and deletion policies.
 
 ## Website
 
-- Ter domínio público para promoção da plataforma e captação de clientes, com integração com solução de pagamentos seguros do serviço
-- Painel de controle para clientes, com um menu de gestão da conta, meios de pagamento, criação de acessos para participantes do grupo de viagem
-    - [Funcionalidade] Gestão de Permissões do Grupo: Definir quem pode alterar o roteiro (ex: Pai/Mãe) e quem pode apenas visualizar (ex: Filhos/Amigos), para evitar que alguém cancele um hotel sem querer.
-- Painel de controle para gestão do ambiente, usados pelos administradores
-- Painel de controle para terceiros, como fornecedores e parceiros
-- Para o painel de clientes, ter um sistema de documentos com formatação rica, como o Evernote, onde o conteúdo é apresentado em um sistemas de fichário, onde os documentos podem ser compartilhados ou acessíveis via link gerado pela IA
+- Have a public domain for platform promotion and customer acquisition, with integration with secure payment solution
+- Control panel for customers, with an account management menu, payment methods, access creation for travel group participants
+    - [Feature] Group Permission Management: Define who can change the itinerary (e.g., Father/Mother) and who can only view (e.g., Children/Friends), to prevent someone from canceling a hotel by mistake.
+- Control panel for environment management, used by administrators
+- Control panel for third parties, such as suppliers and partners
+- For the customer panel, have a document system with rich formatting, like Evernote, where content is presented in a filing system, where documents can be shared or accessible via a link generated by the AI
 
-## Painel de Administração (MVP)
+## Administration Panel (MVP)
 
-O painel de administração é uma interface web para gestão do ambiente, com acesso restrito aos administradores da plataforma. A plataforma deve suportar **múltiplos administradores**.
+The administration panel is a web interface for managing the environment, with restricted access to platform administrators. The platform must support **multiple administrators**.
 
-### Funcionalidades do Painel Admin
+### Admin Panel Features
 
-| Funcionalidade | Descrição | MVP |
-|----------------|-----------|-----|
-| **Gestão de Prompts** | Tela para definição e edição dos prompts dos agentes, com versionamento. Permite fazer melhorias nos prompts de forma controlada e auditada. | ✅ |
-| **Configuração de Integrações** | Lista de parâmetros de configuração de cada integração (API keys, endpoints, limites) para agilizar parametrização | ✅ |
-| **Gestão de Usuários Admin** | Capacidade de adicionar/remover administradores da plataforma | ✅ |
-| **Monitoramento** | Dashboard de métricas de uso, custos e erros | ✅ |
-| **Logs de Auditoria** | Histórico de alterações em configurações e prompts | ✅ |
+| Feature | Description | MVP |
+|---------|---|---|
+| **Prompt Management** | Screen for defining and editing agent prompts, with versioning. Allows for prompt improvements in a controlled and audited way. | ✅ |
+| **Integration Configuration** | List of configuration parameters for each integration (API keys, endpoints, limits) to expedite parameterization | ✅ |
+| **Admin User Management** | Ability to add/remove platform administrators | ✅ |
+| **Monitoring** | Dashboard of usage metrics, costs and errors | ✅ |
+| **Audit Logs** | History of changes in configurations and prompts | ✅ |
 
-### Gestão de Prompts (Versionamento)
+### Prompt Management (Versioning)
 
-Os prompts do agente devem ser guardados no DynamoDB, com a intenção de serem parametrizados via portal de administração:
+Agent prompts should be stored in DynamoDB, with the intention of being parameterized via the administration portal:
 
 ```typescript
 interface AgentPrompt {
   promptId: string;           // Ex: "router-agent-system-prompt"
   agentType: string;          // Ex: "ROUTER", "PLANNER", "PROFILE"
-  version: number;            // Versão incremental
-  content: string;            // Conteúdo do prompt
-  variables: string[];        // Variáveis substituíveis (ex: {{tripContext}})
-  isActive: boolean;          // Se esta versão está ativa
-  createdBy: string;          // Admin que criou
-  createdAt: string;          // Timestamp de criação
-  changelog: string;          // Descrição das mudanças
+  version: number;            // Incremental version
+  content: string;            // Prompt content
+  variables: string[];        // Replaceable variables (ex: {{tripContext}})
+  isActive: boolean;          // If this version is active
+  createdBy: string;          // Admin who created
+  createdAt: string;          // Creation timestamp
+  changelog: string;          // Description of changes
 }
 ```
 
-### Configuração de Integrações
+### Integration Configuration
 
-| Integração | Parâmetros Configuráveis |
-|------------|--------------------------|
-| **Google Maps** | API Key, Limites de requisição, Cache TTL |
-| **Gemini** | API Key, Modelo, Temperature, Max Tokens |
-| **Bedrock** | Region, Model IDs, Max Tokens por agente |
+| Integration | Configurable Parameters |
+|------|---|
+| **Google Maps** | API Key, Request Limits, Cache TTL |
+| **Gemini** | API Key, Model, Temperature, Max Tokens |
+| **Bedrock** | Region, Model IDs, Max Tokens per agent |
 | **WhatsApp** | Phone Number ID, Access Token, Webhook Secret |
 | **Booking** | Affiliate ID, API Key |
 | **AviationStack** | API Key, Rate Limits |
-| **OpenWeather** | API Key, Unidades (metric/imperial) |
-
-
-## Fluxos
-
-1. Criação de conta e contratação do serviço
-
-    - Sou um interessado no uso da plataforma e quero levar a minha família para uma viagem na Europa. 
-    - Entrei no site público do n-agent e me interessei pelo serviço. Criei a minha conta usando como chave meu e-mail e número do Whatsapp, além de outros dados básicos cadastrais.
-    - Para acessar o painel, tive que validar o meu número do Whatsapp com um código enviado e o e-mail (caso seja um e-mail integrado via OAUTH com Google e Mirosoft, não é necessário verificar).
-    - Sou apresentado ao console onde eu posso criar uma nova viagem, gerir minha conta ou ver mais informações na documentação. Criei um nova viagem que chamei Eurotrip 2027, sem data definida e com 7 membros.
-    - Após a criação da viagem, sou questionado sobre os tipos de contratação por viagem: gratuito, planejador ou concierge, com valores e limitações por tipo. 
-    - Informei dados de faturamento e paguei com o meu cartão de crédito o plano concierge, onde eu terei o agente para organizar e o antes, durante e finalizar a minha viagem.
-
-2. Fase de conhecimento
-
-    - Com a confirmação do pagamento, eu recebi a mensagem do meu agente no Whatsapp se apresentando e explicando resumidamente o processo de planejamento, dividido nas fases conhecimento, planejamento, contratação, concierge e memórias. E ele começou a pedir informações da fase de conhecimento. 
-    - Informei os seguintes dados para o agente: quero viajar pela Europa com minha família composta por mim, esposa, dois filhos e dois sobrinhos. Estamos pensando em viajar pela Inglaterra, França e Itália, ainda sem cidades planejadas. Se der tempo, quem sabe visitar a Espanha também. Nossas férias estão marcadas para o mês inteiro de agosto de 2027, mas podemos considerar 10 dias antes e depois deste mês como datas possíveis. A quantidade de dias deve ficar entre 18 e 22 dias. Nossos últimos 5 dias devem ser em Roma e Florença, onde vamos encontrar um casal de amigos e vamos dividir a hospedagem com eles. 
-    - A IA então confirmou que guardou os dados e perguntou qual era o objetivo da viagem, com exemplos por quais atrações gostaríamos de visitar. Respondi: nosso objetivo é visitar as capitais (Londres, Paris, Roma) algumas cidades que acharmos interessanes na Itália e as suas atrações principais, com mistura de atrações pagas e gratuitas, sempre tentando equilibrar os custos. 
-    - A IA confirmou o registro e pediu dados sobre a forma de transporte, com algumas sugestões. Pedi: transporte público é a preferencia já que queremos economizar e temos um grupo jovem e disposto. Preferência em casas de aluguel para economizar com a quantidade de pessoas. Trem seria a forma mais interesante de transporte entre as cidades, mas podemos pensar em avião se o roteiro tiver cidades muito distantes. Na região da Toscana, eu gostaria de alugar um carro para passear um ou dois dias pela região.
-    - A IA gerou um resumo das informações e confirmou que podemos passar para a próxima fase, mesmo com algumas informações sem definição, como as cidades, datas e locais de preferência. A IA informou um link que cai em uma página do painel do agente, com um documento de título, Fase 1 - Conhecendo a viagem, contendo o resumo das informações dadas, um mapa com um ícone de alfinete para cada local informando uma agenda simplificada com os ranges de datas. Finalizou perguntando: podemos seguir para a fase de planejamento?
-    - Informei então que eu estava preocupado com informações sobre documentação necessária para a viagem já que um dos sobrinhos é menor de idade e eu quero dirigir um carro alugado. A IA então respondeu com as informações que ela achou: todos temos que ter passaportes com data de vencimento menor do que 6 meses da data da viagem, uma forma de comprovar que temos ao menos 30 euros por dia por pessoa, taxas para autorização de viagem na Europa, PID para direção internacional e que eu posso levar meu sobrinho se ele tiver a observação em seu passaporte que ele pode viajar desacompanhado. Gerou um relatório no painel onde eu cliquei e revi os detalhes do resumo que ele passou. Por exemplo, como eu deveria revisar os dados do passaporte, a opção de enviar as fotos dos passaportes para a IA revisar e registrar na pasta de documentos.
-    - Definimos um budget com teto de gastos e informações sobre documentação que já temos (2 pessoas do nosso grupo ainda não tem passaprote brasileiro)
-    - Parei de interagir com a IA neste dia, deixando tarefas pendentes.
-    - [Sugestão de Melhoria]: Na etapa de documentos, a IA deve validar automaticamente a validade do passaporte lendo a data da foto enviada (OCR) e alertar se expira antes ou durante a viagem, não apenas confiar no texto do usuário.
-
-3. Fase de planejamento
-
-    - No dia seguinte a IA mandou uma mensagem me cumprimentando e dizendo que estava pronta para continuar a discutir a fase de conhecimento ou passar para a fase de planejamento. Não respondi nada. Só voltei a mexer no final de semana, quando a IA enviou outro lembrete. 
-    - Comecei pedindo para ela uma sugestão de roteiro e uma sugestão de custos. A IA pediu para eu aguardar enquanto ela gerada um primeiro esboço. Me respondeu com um resumo, sugerindo um voo de São Paulo para Londres no dia 02/08/2027, 4 dias de visita, um trem para Paris, 5 dias de visita, um voo para Nápoles, com 2 dias de visita, um trem para Roma com 4 dias de visita, um trem para Florença, com 4 dias de visita e o voo de retorno para São Paulo. Deu um valor médio de hospedagem usando uma mistura de AirBnB e Booking e sugeriu valores médios de transporte local e alimentação. Gerou o link com o relatório completo, onde detalhou muito mais as informações levantadas com locais sugeridos de hospedagem (próximas a metrôs), lembrou dos meus amigos nos últimos dias de viagem onde aumentamos a quantidade de pessoas para 9 na hospedagem e sugeriu as atrações principais. Tudo com links para visitas.
-    - Revisamos ponto a ponto cada sugestão, começando pelas passagens e revisão dos hotéis, optando por hospedagens com ao menos 2 banheiros e que estivessem fácil acesso a atrações. Pedi um estudo de quanto vale a pena ficar longe da cidade e economizar na estadia, mas gastar mais tempo e dinheiro no deslocamento, o que foi prontamente feito, alterando as sugestões de hospedagem. 
-    - Deposi revisamos a alimentação, transporte, atrações. Adequamos as sugestões de atrações com público de maioria jovem, com algumas lojas de grife, visitas a bibliotecas, museus e até um show. Mudamos algumas sugestões de datas para conseguirmos visitar locais icônicos, como a Disneyland Paris e o palácio de Versalhes.
-    - Por último, o agente me ajudou a entender como devemos nos preparar com checklists de documentos, serviços (seguro viagem, seguro de carro, aluguel de carro), dicas para economia sugerindo e revisando o tipo do meu cartão de crédito para usar serviços no exterior, comparando ofertas de serviços de roaming internacional para internet no local de visita, sugerindo locais de alimentação para datas especiais, etc.
-    - Os documentos desta fase foram organizados com resumos, links, condições e pré-requisitos, uma timeline para acompanhamento das datas limites (por exemplo, o ticket do coliseu deve ser comprado com 30 dias de antecedência, nem antes nem depois, mas a maioria precisa ser comprada com antedência).
-    - [Funcionalidade]: "Edição Manual do Usuário". Se a IA sugerir algo que o usuário odeia, ele deve ter uma forma fácil no painel web de clicar e substituir ou excluir o item, e a IA deve recalcular o resto (replanejamento dinâmico). 
-
-4. Contratação de serviços
-
-    - A IA criou listas de serviços, datas e preços para eu realizar a contratação de dados os serviços, desde a passagem até o guia turístico sugerido. Com a ajuda da IA, contratei de serviço a serviço. Alguns deles, pedi para a IA me lembrar depois para ajudar a dividir as parcelas das despesas em meses diferentes. 
-    - Para cada serviço contratado, anexei os comprovantes e tickets para a IA revisar os dados (como datas, condições de pagamento, horários de check-in, regras restritivas). As informações validadas são adicionadas no meu roteiro, com links para os documentos originais na plataforma. 
-    - A IA registrou todos os pagamentos e criou dashboards com os valores e datas de pagamentos das parcelas. Também me ajudou a criar cofres no Picpay para juntar o dinheiro para alimentação e transporte, afim de provisionar os fundos da viagem e das compras pretendidas pelo grupo, com uma lista de desejos de produtos por pessoa pelo Google Keep.
-    - Recebi alertas para lembrar com alguns dias de antecedência a contratação e pagamentos de serviços. A IA também me ajudou na tradução de contratos em inglês de guias turísticos e na avaliação de contratos de seguro saúde. 
-    - [Sugestão]: Controle Financeiro Multi-moeda. O painel deve mostrar o gasto estimado em Reais (convertido) e na moeda original (Euro/Libra), permitindo input manual de câmbio pago para controle real do cartão de crédito.
-    - [Dúvidas]: Exportação das informações para outros sistemas de controle?.
-
-5. Concierge
-
-    - Alguns dias antes da viagem, todos os integrantes do meu grupo de viagem receberam listas de check-up de itens de malas (tipos de roupas, carregadores, aplicativos de celular instalados, itens de higiene pessoal, etc.), documentos e as previsões do tempo para cada dia. 
-    - Algumas horas da viagem eu recebi um link para traçar a rota para o aeroporto no Google Maps, assim como os links para as passagens aéreas de todos do meu grupo. Também recebemos links com a localização e uso de salas VIPs no aeroporto, contextualizadas para o meu cartão de crédito, informações do roteiro do dia com duração do voo.
-    - Ao chegar no aeroporto recebi uma mensagem do agente com previsão de qual portão de embarque do meu voo e informações de que o voo estava no horário previsto. 
-    - Meu sobrinho trouxe uma mala acima do peso e foi informado que havia cobrança para despacho. Pedi para a IA verificar se havia alguma forma de evitar este custo e ela respondeu que um dos cartões de crédito registrados no sistema dava o benefício de despachos de mala com um peso adequado para meu sobrinho. Economizamos o valor do despacho.
-    - Ao chegar no aeroporto de Londres, recebi uma mensagem do agente com as direções para pegarmos o metrô até o AirBnB. As informações continham as direções, valores da tarifa, forma de pagamento (com cartão direto na catraca) e baldiações necessárias, além do tempo médio com um link do Google Maps para acompanhamento.
-    - Durante a viagem recebemos diversos alertas, informações sobre o local. Documentos contendo os ingressos, direções e valores ajudaram a preencher informações. Por exemplo, 2 horas antes de retirar o carro alugado, a IA listou os documentos necessários e a direção no Google Maps para o local de retirada. Também alertou de um valor de reserva no cartão de crédito em nome do motorista de 3000 euros, descrito no documento de reserva do veículo. 
-    - Em uma das atrações, um dos meus filhos apresentou dor de estômago severa. Perguntei instruções para a IA e de pronto fui informado do telefone de atendimento do seguro viagem em portguês e um template de como eu deveria pedir auxílio. Fui orientado pela atendente a ir a uma clínica conveniada onde fomos atendidos sem custo direto para mim. A IA ajudou no entendimento das regras do seguro sem eu precisar revisar documentos ou pesquisar os contatos.
-    - Perdemos a hora de uma atração, o Coliseu. Com isso, não conseguimos mais entrar. A IA informou que não haviam mais ingressos disponíveis e deu duas alternativas: enfrentar a fila da bilheteria, com horas de espera e possibilidade de esgotamento de ingressos, ou comprar bilhete por um tour guiado que a IA encontrou em um site de viagens. A IA conversou com o contato com o tour guiado via Whatsapp e negociou valor e disponibilidade para o meu grupo, eliminando este gasto de tempo. Também sugeriu adiantar outras atrações, alterando a agenda de atrações do dia em nosso roteiro para ocupar o tempo que seria gasto no coliseu.
-    - Na última cidade do roteiro, a hospedagem de um apartamento em Florença via Booking tinha um detalhe diferente do esperado, um único banheiro. A IA revisou o artigo da hospedagem e confirmou a informação que haviam dois banheiros e sugeriu contato com o ponto de contato via telefone ou mensagem na plataforma do Booking, sugerindo um template de manesagem em Italiano questionando a falta do banheiro. Não tivemos êxito no contato, com a IA sugerindo contato com o suporte da plataforma do Booking e apresentou 3 possíveis caminhos: aceitar a situação e depois pedir reembolso de valores referentes a falta do recurso contratado, receber uma opção de troca do ponto de contato ou do time de suporte do Booking ou reservar um outra estadia, apresentando opções próximas com valores mais altos da diária, mas condições similares. Usamos a terceira opção e a IA recalculou o controle de gastos para adicionar uma tarifa de ônibus diferente, o valor da diária e ajustou o roteiro com rotas. 
-    - [Cenário de Crise]: Adicionar fluxo para "Perda de Documentos" (onde ir, consulado mais próximo, o que levar) e "Greves de Transporte" (muito comum na Europa/França). A IA deve monitorar notícias locais para antecipar greves de trem.
-
-6. Memórias
-
-    - A IA entregou um resumo do roteiro percorrido, um calendário com fotos do local e descrições das mudanças ocorridas durante a viagem.
-    - Com uma integração com o Google Fotos, criou um álbum compartilhado com todos os participantes, criando separações por local no álbum para organização. 
-    - Ofertou um serviço de impressão do álbum por um valor adicional. 
-    - [Sugestão]: Mapa de Calor (Heatmap) dos locais visitados baseado no histórico de localização (se o usuário permitir), criando uma visualização bonita do trajeto real vs. planejado.
-
-## Informações sobre o MVP
-
-> **⚠️ ATUALIZAÇÃO DE ESCOPO**: Consulte [MVP_SCOPE_UPDATE.md](./fases_implementacao/MVP_SCOPE_UPDATE.md) para alterações recentes.
-
-### Escopo Reduzido para MVP (Fase 1 - 3 meses)
-
-Para garantir viabilidade financeira e time-to-market adequado, o MVP terá escopo reduzido:
-
-**Integrações Core (obrigatórias):**
-- 🔲 WhatsApp Business API *(estrutura apenas - aguardando aprovação Meta)*
-- ✅ **Chat Web** *(interface principal do MVP)*
-- ✅ Google Maps Platform (Places + Directions)
-- ✅ Booking.com Affiliate API (hospedagem altenativa e atrações)
-- ✅ Airbnb (hospedagem principal)
-- ✅ AviationStack API (dados de voos e aeroportos em tempo real)
-- ✅ OpenWeather API (clima básico)
-- ✅ Gemini 2.0 Flash + Google Search Grounding (IA com busca web atualizada)
-- Google Calendar (sincronização de agenda)
-
-**Integrações Fase 2 (pós-validação - 3 meses após MVP):**
-- **WhatsApp Business API** *(quando aprovado pela Meta)*
-- Skyscanner/Amadeus (busca de voos para compra)
-- Google Flight
-- Open Exchange Rates (câmbio em tempo real)
-- DeepL/Google Translate (tradução)
-- Car rental (aluguel de carros)
-
-**Integrações Fase 3 (escala - 6+ meses):**
-- TripAdvisor, tradução, OCR de documentos
-
-### Funcionalidades do MVP
-
-| Funcionalidade | MVP | Fase 2 | Fase 3 |
-|----------------|-----|--------|--------|
-| Chat Web | ✅ | ✅ | ✅ |
-| Chat WhatsApp | 🔲 estrutura | ✅ | ✅ |
-| Fase Conhecimento | ✅ | ✅ | ✅ |
-| Fase Planejamento | ✅ (básico) | ✅ (completo) | ✅ |
-| Fase Contratação | ❌ (links apenas) | ✅ (parcial) | ✅ |
-| Fase Concierge | ❌ | ✅ (básico) | ✅ |
-| Fase Memórias | ❌ | ❌ | ✅ |
-| Documentos Ricos | ✅ (HTML interativo) | ✅ | ✅ |
-| Versionamento Roteiros | ❌ | ✅ | ✅ |
-| Multi-moeda | ❌ | ✅ | ✅ |
-| OCR Passaporte | ❌ | ❌ | ✅ |
-
-### Limitações Conhecidas do MVP
-
-- Não faremos a contratação de serviços automática, usando o agente, apenas vamos avaliar e indicar as melhores ofertas/serviços encontradas nas integrações para atender o roteiro e oferecer o link para a contratação. Mas no futuro queremos integrar as informações.
-- [Estratégia]: Deixar claro nos Termos de Uso que a responsabilidade final da reserva (datas e nomes corretos) é do usuário, já que a IA apenas sugere o link, para evitar processos caso o usuário compre algo errado.
-- **Sem modo offline real**: Apenas envio antecipado de informações via WhatsApp
-- **Sem integração de pagamentos in-app**: Redirecionamento para sites parceiros
-- **Grupos limitados a 10 pessoas**: Para controlar complexidade inicial
+| **OpenWeather** | API Key, Units (metric/imperial) |
 
 ---
 
-# Gestão de Grupos e Permissões
-
-## Modelo de Acesso Multiusuário
-
-### Papéis Disponíveis
-
-| Papel | Permissões |
-|-------|------------|
-| **OWNER** | Tudo: editar, excluir, convidar, pagar, ver financeiro |
-| **ADMIN** | Editar roteiro, convidar membros, ver tudo exceto financeiro |
-| **EDITOR** | Editar apenas itens próprios, sugerir alterações |
-| **VIEWER** | Apenas visualização, receber alertas |
-
-### Fluxo de Convite
-
-1. Owner cria viagem e define orçamento
-2. Owner convida membros via WhatsApp ou email
-3. Membro recebe link único com token temporário (7 dias)
-4. Membro aceita e cria conta (ou vincula existente)
-5. Owner aprova e define papel do membro
-
-### Split de Custos (Fase 2)
-
-- Dashboard mostrando "Minha parte" vs "Total da viagem"
-- Integração futura com Splitwise ou cálculo interno
-- Notificação de "Fulano pagou R$ X, falta você pagar R$ Y"
-
----
-
-# Fluxos Adicionais
-
-## 7. Cancelamento e Reembolso
-
-- Usuário pode cancelar plano a qualquer momento
-- Reembolso proporcional se cancelar antes de 50% do período
-- Dados mantidos por 90 dias após cancelamento (LGPD)
-- Possibilidade de "pausar" viagem sem perder dados
-
-## 8. Onboarding Gamificado
-
-- Progress bar: "Sua viagem está 40% planejada"
-- Conquistas: "Primeiro hotel escolhido! 🏨"
-- Checklist visual de tarefas pendentes por membro
-- Comparativo: "Viajantes como você geralmente..."
-
-## 9. Cenários de Crise Cobertos
-
-| Cenário | Ação da IA |
-|---------|------------|
-| Perda de passaporte | Endereço do consulado, documentos necessários, template de BO |
-| Greve de transporte | Monitorar notícias, sugerir alternativas, recalcular roteiro |
-| Emergência médica | Contato do seguro, hospitais próximos, tradução de sintomas |
-| Voo cancelado | Direitos do passageiro, rebooking, compensação |
-| Overbooking hotel | Template de reclamação, alternativas próximas |
+**Last Updated**: January 2026  
+**Language**: English (Translated from Portuguese)

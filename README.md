@@ -1,23 +1,23 @@
-# 🧳 N-Agent Core - Assistente Pessoal de Viagens
+# 🧳 N-Agent Core - Personal Travel Assistant
 
-**Status**: ✅ **Fase 0 COMPLETA** | 🚧 Fase 1 em Preparação
+**Status**: ✅ **Phase 0 COMPLETE** | 🚧 Phase 1 in Preparation
 
-Assistente conversacional inteligente para planejamento e gestão de viagens, usando **Amazon Bedrock AgentCore** + **Strands Agents SDK** com arquitetura multi-agente e cost optimization.
+Intelligent conversational assistant for travel planning and management using **Amazon Bedrock AgentCore** + **Strands Agents SDK** with multi-agent architecture and cost optimization.
 
-## 🎯 Visão Geral
+## 🎯 Overview
 
-O **N-Agent** é um assistente de viagens que:
-- 💬 Conversa naturalmente via **Chat Web** (interface principal)
-- 📱 WhatsApp Business API (estrutura pronta, aguardando aprovação Meta)
-- 🤖 Usa multi-agentes especializados com roteamento inteligente (76% economia)
-- 📄 Processa documentos (passaportes, vistos, reservas) com Vision AI
-- 🧠 Mantém memória de conversas e contexto da viagem (AgentCore Memory)
-- 📊 Gera relatórios e roteiros personalizados
-- ☁️ **Zero infraestrutura** - Serverless com Bedrock AgentCore Runtime
+**N-Agent** is a travel assistant that:
+- 💬 Converses naturally via **Web Chat** (main interface)
+- 📱 WhatsApp Business API (structure ready, awaiting Meta approval)
+- 🤖 Uses specialized multi-agents with intelligent routing (76% cost savings)
+- 📄 Processes documents (passports, visas, reservations) with Vision AI
+- 🧠 Maintains conversation memory and trip context (AgentCore Memory)
+- 📊 Generates personalized reports and itineraries
+- ☁️ **Zero infrastructure** - Serverless with Bedrock AgentCore Runtime
 
-> **📝 Nota MVP**: WhatsApp movido para pós-MVP (Meta ainda não aprovou integração). Ver [MVP_SCOPE_UPDATE.md](.promtps_iniciais/fases_implementacao/MVP_SCOPE_UPDATE.md)
+> **📝 MVP Note**: WhatsApp moved to post-MVP (Meta has not approved integration yet). See [MVP_SCOPE_UPDATE.md](.promtps_iniciais/fases_implementacao/MVP_SCOPE_UPDATE.md)
 
-## 🏗️ Arquitetura
+## 🏗️ Architecture
 
 ### Multi-Agent Routing System (Strands SDK + AgentCore)
 
@@ -36,130 +36,130 @@ User Message → Router Agent (Strands + Nova Micro)
             AgentCore Runtime (Serverless, 8h timeout)
 ```
 
-**Inovação: Cost Optimization com Router Agent**
-- **76% de redução** vs usar apenas Nova Pro
-- **Antes**: $6.40/mês (1000 msgs, todas Nova Pro)
-- **Depois**: $1.52/mês (roteamento inteligente)
-- **Fast path**: Padrões triviais detectados sem API call (0ms)
+**Innovation: Cost Optimization with Router Agent**
+- **76% reduction** compared to using Nova Pro only
+- **Before**: $6.40/month (1000 msgs, all Nova Pro)
+- **After**: $1.52/month (intelligent routing)
+- **Fast path**: Trivial patterns detected without API call (0ms)
 
-### Stack Tecnológico
+### Technology Stack
 
 **Backend (Python 3.13)**:
 - **Runtime**: Amazon Bedrock AgentCore (zero infra, session isolation, 8h timeout)
 - **Framework**: Strands Agents SDK (model-agnostic, observability, streaming)
 - **Models**: Amazon Nova Micro/Lite/Pro + Claude 3 Sonnet
-- **Memory**: AgentCore Memory (short-term + long-term com estratégias)
+- **Memory**: AgentCore Memory (short-term + long-term strategies)
 - **Tools**: MCP Protocol, bedrock-agentcore, strands-agents, boto3
 - **Testing**: pytest (17 tests passing), black, ruff
 
-**Infra (Serverless - Fase 1+)**:
+**Infra (Serverless - Phase 1+)**:
 - Bedrock AgentCore Runtime (managed serverless)
 - AWS Lambda + API Gateway (BFF layer)
-- DynamoDB (viagens, usuários)
-- S3 (documentos, embeddings)
-- Terraform para IaC
-- GitHub Actions para CI/CD
+- DynamoDB (trips, users)
+- S3 (documents, embeddings)
+- Terraform for IaC
+- GitHub Actions for CI/CD
 
-**Frontend (Fase 4+)**:
-- React + Vite (Web Client com Chat integrado)
+**Frontend (Phase 4+)**:
+- React + Vite (Web Client with integrated Chat)
 - Material Design M3 Expressive
-- WhatsApp Business API (pós-MVP, aguardando Meta)
+- WhatsApp Business API (post-MVP, awaiting Meta)
 
 ## 🚀 Quick Start
 
-### Pré-requisitos
+### Prerequisites
 
 - Python 3.13+
 - [UV](https://github.com/astral-sh/uv) (package manager)
-- AWS CLI configurado (`aws configure`)
-- Acesso ao Bedrock (modelos habilitados: Nova, Claude 3)
+- AWS CLI configured (`aws configure`)
+- Bedrock access (models enabled: Nova, Claude 3)
 
-### Instalação
+### Installation
 
 ```bash
-# Clone o repositório
-git clone https://github.com/seu-usuario/n-agent-core.git
+# Clone the repository
+git clone https://github.com/your-username/n-agent-core.git
 cd n-agent-core/agent
 
-# Instalar dependências com UV (rápido!)
+# Install dependencies with UV (fast!)
 uv sync
 
-# Teste local do Router Agent
+# Test local Router Agent
 uv run python test_router_local.py
 ```
 
-**Saída esperada**:
+**Expected output**:
 ```
-🧪 TESTANDO N-AGENT - ROUTER AGENT COM STRANDS SDK
+🧪 TESTING N-AGENT - ROUTER AGENT WITH STRANDS SDK
 ================================================================================
-Test 1/4: 'Oi!'
-🔀 Router: 'Oi!...' → trivial (us.amazon.nova-lite-v1:0) em 0ms
+Test 1/4: 'Hi!'
+🔀 Router: 'Hi!...' → trivial (us.amazon.nova-lite-v1:0) in 0ms
   ✅ PASS
 
-Test 3/4: 'Planeje 3 dias em Roma'
-🔀 Router: 'Planeje 3 dias em Roma...' → complex (us.amazon.nova-pro-v1:0) em 453ms
+Test 3/4: 'Plan 3 days in Rome'
+🔀 Router: 'Plan 3 days in Rome...' → complex (us.amazon.nova-pro-v1:0) in 453ms
   ✅ PASS
 ================================================================================
-✅ FASE 0 COMPLETA: Router Agent funcionando com Strands SDK
+✅ PHASE 0 COMPLETE: Router Agent working with Strands SDK
 ```
 
-### Executar Testes Unitários
+### Run Unit Tests
 
 ```bash
-# Executar todos os testes
+# Run all tests
 uv run pytest tests/ -v
 
 # 17 passed, 2 warnings in 1.69s ✅
 ```
 
-## 📦 Estrutura do Projeto
+## 📦 Project Structure
 
 ```
 /n-agent-core
 ├── /agent                       # 🤖 Core AI Agent (Python)
 │   ├── /src
-│   │   ├── main.py              # Entrypoint AgentCore
+│   │   ├── main.py              # AgentCore Entrypoint
 │   │   ├── /router              # Router Agent (Nova Micro)
 │   │   ├── /prompts             # System prompts
-│   │   └── /tools               # Agent tools (busca, docs)
+│   │   └── /tools               # Agent tools (search, docs)
 │   ├── .bedrock_agentcore.yaml  # Runtime config
 │   ├── pyproject.toml           # Dependencies (UV)
 │   └── /tests                   # Unit tests
 ├── /apps
-│   ├── /web-client              # 🌐 React + Vite App (Fase 4) - Interface Principal
-│   └── /admin-panel             # 📊 Dashboard (Fase 5)
+│   ├── /web-client              # 🌐 React + Vite App (Phase 4) - Main Interface
+│   └── /admin-panel             # 📊 Dashboard (Phase 5)
 ├── /packages
 │   ├── /core-types              # TypeScript types
 │   └── /ui-lib                  # Shared UI components
 ├── /lambdas
-│   ├── /doc-generator           # Relatórios PDF (Fase 3)
-│   ├── /whatsapp-webhook        # WhatsApp (estrutura - pós-MVP)
-│   └── /bff                     # Backend for Frontend (Fase 4)
+│   ├── /doc-generator           # PDF Reports (Phase 3)
+│   ├── /whatsapp-webhook        # WhatsApp (structure - post-MVP)
+│   └── /bff                     # Backend for Frontend (Phase 4)
 ├── /infra/terraform             # 🏗️ Infrastructure as Code
 │   ├── /modules                 # Reusable Terraform modules
 │   └── /environments            # dev/prod configs
 └── /.github/workflows           # CI/CD
 ```
 
-## 🛠️ Comandos de Desenvolvimento
+## 🛠️ Development Commands
 
-### Desenvolvimento Local (Windows)
+### Local Development (Windows)
 
 ```bash
-# Instalar dependências
+# Install dependencies
 cd agent
 uv sync
 
-# Rodar em modo DEV (localhost:8080)
+# Run in DEV mode (localhost:8080)
 $env:BEDROCK_AGENTCORE_MEMORY_ID="nAgentMemory-jXyHuA6yrO"
 uv run agentcore dev
 
-# Testar local
+# Test locally
 curl -X POST http://localhost:8080/invocations `
   -H "Content-Type: application/json" `
-  -d '{"prompt": "Olá!"}'
+  -d '{"prompt": "Hello!"}'
 
-# Executar testes
+# Run tests
 uv run pytest tests/ -v
 
 # Lint
@@ -169,165 +169,156 @@ uv run ruff check src/
 uv run ruff format src/
 ```
 
-### Deploy
+### Deployment
 
-#### Deploy Manual (WSL 2)
+#### Manual Deployment (WSL 2)
 
 ```powershell
-# Deploy completo (testes + validação + deploy)
+# Full deployment (tests + validation + deploy)
 .\deploy.ps1
 
-# Deploy sem testes (use só se já testou)
+# Deploy without tests (only if you already tested)
 .\deploy.ps1 -SkipTests
 
-# Validação pré-deploy apenas
+# Pre-deploy validation only
 .\scripts\validate-pre-deploy.ps1
 ```
 
-#### Deploy Automático (GitHub Actions)
+#### Automatic Deployment (GitHub Actions)
 
-Push para `main` com alterações em `agent/` dispara deploy automático:
+Push to `main` with changes in `agent/` triggers automatic deployment:
 
 ```bash
 git add agent/
-git commit -m "feat: nova funcionalidade"
+git commit -m "feat: new feature"
 git push origin main
 ```
 
 **Workflow**:
-1. ✅ Validação (Python 3.11, requirements.txt)
-2. ✅ Testes (pytest)
+1. ✅ Validation (Python 3.11, requirements.txt)
+2. ✅ Tests (pytest)
 3. ✅ Linter (ruff)
 4. ✅ Deploy (agentcore launch)
 5. ✅ Smoke test (invoke)
 
-**Requisitos**:
-- Secret: `AWS_DEPLOY_ROLE_ARN` (IAM Role para OIDC)
+**Requirements**:
+- Secret: `AWS_DEPLOY_ROLE_ARN` (IAM Role for OIDC)
 - Secret: `BEDROCK_AGENTCORE_MEMORY_ID` 
-- Permissões: `bedrock-agentcore:*`, `iam:PassRole`, `s3:*`, `logs:*`
+- Permissions: `bedrock-agentcore:*`, `iam:PassRole`, `s3:*`, `logs:*`
 
-### Status e Logs
+### Status and Logs
 
 ```bash
 # Via WSL
 wsl bash -lc "cd /mnt/c/.../agent && agentcore status"
 wsl bash -lc "cd /mnt/c/.../agent && agentcore invoke '{\"prompt\": \"test\"}'"
 
-# Logs CloudWatch
+# CloudWatch Logs
 aws logs tail /aws/bedrock-agentcore/runtimes/nagent-GcrnJb6DU5-DEFAULT \
   --since 5m --follow --region us-east-1
 ```
 
-# Format
-uv run black src/
+## 📋 Development Phases
 
-# Test
-uv run pytest tests/ -v
+### ✅ Phase 0: Environment Preparation (COMPLETE)
+- [x] Enable models on Bedrock
+- [x] Verify AWS CLI and credentials
+- [x] Install UV + Python 3.13
+- [x] Create project structure
+- [x] Initialize Python project
+- [x] Create test agent (`main.py`)
+- [x] Create Router Agent (`agent_router.py`)
+- [x] Configure CI/CD (GitHub Actions)
+- [x] Create README
 
-# Deploy (Fase 1)
-# TODO: AgentCore CLI commands
-```
+## 🎯 **BEST PRACTICES IMPLEMENTED**
 
-## 📋 Fases de Desenvolvimento
-
-### ✅ Fase 0: Preparação do Ambiente (COMPLETO)
-- [x] Habilitar modelos no Bedrock
-- [x] Verificar AWS CLI e credentials
-- [x] Instalar UV + Python 3.13
-- [x] Criar estrutura do projeto
-- [x] Inicializar projeto Python
-- [x] Criar agente de teste (`main.py`)
-- [x] Criar Router Agent (`agent_router.py`)
-- [x] Configurar CI/CD (GitHub Actions)
-- [x] Criar README
-## 🎯 **BEST PRACTICES IMPLEMENTADAS**
-
-Seguindo [AWS Documentation oficial](https://docs.aws.amazon.com/bedrock-agentcore/):
+Following [AWS Official Documentation](https://docs.aws.amazon.com/bedrock-agentcore/):
 
 ✅ **BedrockAgentCoreApp** - Runtime protocol compliant  
 ✅ **Strands Agents SDK** - Model-agnostic framework  
-✅ **AgentCore Memory** - Session management com SessionManager  
-✅ **Cost Optimization** - Router Agent com fast patterns  
+✅ **AgentCore Memory** - Session management with SessionManager  
+✅ **Cost Optimization** - Router Agent with fast patterns  
 ✅ **Security** - Input validation, least-privilege IAM  
 ✅ **Observability** - OpenTelemetry ready  
-✅ **Testing** - 17 unit tests com mocks  
+✅ **Testing** - 17 unit tests with mocks  
 
-**Documentação de Referência**:
+**Reference Documentation**:
 - [Best Practices](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/best-practices.html)
 - [Runtime Quickstart](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/runtime-get-started-toolkit.html)
 - [Strands Memory](https://docs.aws.amazon.com/bedrock-agentcore/latest/devguide/strands-sdk-memory.html)
 
 ---
 
-## 📅 Roadmap de Implementação
+## 📅 Implementation Roadmap
 
-### ✅ Fase 0: Preparação do Ambiente (COMPLETA)
+### ✅ Phase 0: Environment Preparation (COMPLETE)
 - ✅ AWS Bedrock access (Nova, Claude 3)
-- ✅ Estrutura de pastas criada (13 diretórios)
-- ✅ Python project com UV (68 packages)
-- ✅ **Router Agent com Strands SDK** (267 linhas)
-- ✅ **AgentCore Memory integration** (preparado)
-- ✅ **.bedrock_agentcore.yaml** configurado
+- ✅ Folder structure created (13 directories)
+- ✅ Python project with UV (68 packages)
+- ✅ **Router Agent with Strands SDK** (267 lines)
+- ✅ **AgentCore Memory integration** (prepared)
+- ✅ **.bedrock_agentcore.yaml** configured
 - ✅ **BedrockAgentCoreApp entrypoint** (main.py)
 - ✅ CI/CD GitHub Actions (lint + test)
-- ✅ **17 testes unitários** (17 passed, 100% pass rate)
-- ✅ Documentação completa (README)
+- ✅ **17 unit tests** (17 passed, 100% pass rate)
+- ✅ Complete documentation (README)
 
-**Deliverables**: Router Agent funcional com 76% cost optimization, pronto para deploy no AgentCore Runtime.
+**Deliverables**: Functional Router Agent with 76% cost optimization, ready for AgentCore Runtime deployment.
 
-### 🔄 Fase 1: Foundation (EM PROGRESSO)
-- [ ] **Deploy no AgentCore Runtime** (`agentcore launch`)
-- [ ] Configurar AgentCore Memory (criar memory ID)
-- [ ] Implementar Chat Agent (Nova Lite + Memory)
-- [ ] Implementar Planning Agent (Nova Pro + Tools)
-- [ ] Implementar Vision Agent (Claude Sonnet + OCR)
-- [ ] Gateway Agent para orquestração
-- [ ] Session Manager com persistência
-- [ ] Testes de integração end-to-end
-- [ ] Observability com CloudWatch
+### 🔄 Phase 1: Foundation (IN PROGRESS)
+- [ ] **Deploy on AgentCore Runtime** (`agentcore launch`)
+- [ ] Configure AgentCore Memory (create memory ID)
+- [ ] Implement Chat Agent (Nova Lite + Memory)
+- [ ] Implement Planning Agent (Nova Pro + Tools)
+- [ ] Implement Vision Agent (Claude Sonnet + OCR)
+- [ ] Gateway Agent for orchestration
+- [ ] Session Manager with persistence
+- [ ] End-to-end integration tests
+- [ ] Observability with CloudWatch
 
-### ⏳ Fase 2: Knowledge Collection (PENDENTE)
-- [ ] Tools para coleta de dados (MCP protocol)
-- [ ] Upload de documentos (S3)
-- [ ] Processamento de imagens (OCR + Vision)
-- [ ] Extração de informações (LLM)
-- [ ] Armazenamento em Knowledge Base (RAG)
-- [ ] AgentCore Gateway para tools
+### ⏳ Phase 2: Knowledge Collection (PENDING)
+- [ ] Tools for data collection (MCP protocol)
+- [ ] Document upload (S3)
+- [ ] Image processing (OCR + Vision)
+- [ ] Information extraction (LLM)
+- [ ] Knowledge Base storage (RAG)
+- [ ] AgentCore Gateway for tools
 
-### ⏳ Fase 3: AI Core (PENDENTE)
-- [ ] Refinar Planning Agent (multi-step workflows)
-- [ ] Refinar Chat Agent (conversational)
-- [ ] Refinar Vision Agent (document analysis)
-- [ ] Guardrails de segurança (Bedrock Guardrails)
-- [ ] Otimização de prompts e caching
-- [ ] A2A protocol para multi-agent coordination
+### ⏳ Phase 3: AI Core (PENDING)
+- [ ] Refine Planning Agent (multi-step workflows)
+- [ ] Refine Chat Agent (conversational)
+- [ ] Refine Vision Agent (document analysis)
+- [ ] Security Guardrails (Bedrock Guardrails)
+- [ ] Prompt optimization and caching
+- [ ] A2A protocol for multi-agent coordination
 
-### ⏳ Fase 4: Output Generation (PENDENTE)
-- [ ] Generator de relatórios PDF
-- [ ] Templates Jinja2
-- [ ] **Web Client (React + Vite) - Interface Principal**
-- [ ] **Chat Web integrado ao agente**
+### ⏳ Phase 4: Output Generation (PENDING)
+- [ ] PDF report generator
+- [ ] Jinja2 templates
+- [ ] **Web Client (React + Vite) - Main Interface**
+- [ ] **Integrated Web Chat with agent**
 - [ ] BFF Lambda (REST API)
-- [ ] 🔲 WhatsApp Business API (estrutura pronta, aguardando Meta)
+- [ ] 🔲 WhatsApp Business API (structure ready, awaiting Meta)
 
-### ⏳ Fase 5: Advanced Features (PENDENTE)
+### ⏳ Phase 5: Advanced Features (PENDING)
 - [ ] Admin Dashboard
-- [ ] Analytics e métricas
-- [ ] Multi-idioma
-- [ ] AgentCore Browser para web scraping
-- [ ] WhatsApp integração ativa (quando aprovado)
+- [ ] Analytics and metrics
+- [ ] Multi-language support
+- [ ] AgentCore Browser for web scraping
+- [ ] WhatsApp active integration (when approved)
 
-## 🧪 Testes
+## 🧪 Testing
 
 ```bash
 # Unit tests (17 tests)
 cd agent
 uv run pytest tests/ -v
 
-# Teste local do Router Agent
+# Test local Router Agent
 uv run python test_router_local.py
 
-# Lint e formatação
+# Lint and formatting
 uv run ruff check src/
 uv run black src/ --check
 
@@ -335,66 +326,67 @@ uv run black src/ --check
 uv run pytest --cov=src tests/
 ```
 
-**Status Atual**: ✅ 17/17 testes passando (100%)
+**Current Status**: ✅ 17/17 tests passing (100%)
 
-## 📊 Custos Estimados (MVP)
+## 📊 Estimated Costs (MVP)
 
-### Fase 0 (Desenvolvimento Local)
-- **AWS Bedrock API calls**: ~$0.10/dia (testes)
-- **Zero custo de infra** (local development)
+### Phase 0 (Local Development)
+- **AWS Bedrock API calls**: ~$0.10/day (testing)
+- **Zero infrastructure cost** (local development)
 
-### Fase 1 (1000 msgs/mês, 30 dias, AgentCore Runtime)
-- **Router Agent** (Nova Micro): $0.72/mês
-- **Chat Agent** (Nova Lite): $0.48/mês
-- **Planning Agent** (Nova Pro): $0.32/mês
-- **Prompt Caching** (60% cache hit): -$0.52/mês (economia)
-- **AgentCore Runtime**: Consumption-based (~$2-3/mês)
-- **AgentCore Memory**: ~$1.50/mês (1000 events)
-- **S3**: ~$0.50/mês
+### Phase 1 (1000 msgs/month, 30 days, AgentCore Runtime)
+- **Router Agent** (Nova Micro): $0.72/month
+- **Chat Agent** (Nova Lite): $0.48/month
+- **Planning Agent** (Nova Pro): $0.32/month
+- **Prompt Caching** (60% cache hit): -$0.52/month (savings)
+- **AgentCore Runtime**: Consumption-based (~$2-3/month)
+- **AgentCore Memory**: ~$1.50/month (1000 events)
+- **S3**: ~$0.50/month
 
-**Total MVP**: ~$5.00/mês 🎉
+**Total MVP**: ~$5.00/month 🎉
 
-**Economia vs Lambda + DynamoDB tradicional**: 40-60% (zero infra management)
+**Savings vs traditional Lambda + DynamoDB**: 40-60% (zero infrastructure management)
 
-## 🔐 Segurança
+## 🔐 Security
 
-- ✅ IAM roles com least privilege
-- ✅ Secrets no AWS Secrets Manager
-- ✅ Guardrails do Bedrock habilitados
-- ✅ Logs CloudWatch (sem PII)
+- ✅ IAM roles with least privilege
+- ✅ Secrets in AWS Secrets Manager
+- ✅ Bedrock Guardrails enabled
+- ✅ CloudWatch Logs (no PII)
 - ✅ Encryption at rest (S3/DynamoDB)
 
-## 📚 Documentação
+## 📚 Documentation
 
-- [Proposta Inicial](docs/proposta_inicial.md)
-- [Proposta Técnica](docs/proposta_tecnica.md)
-- [Arquitetura Detalhada](docs/00_arquitetura.md)
-- [Fase 0: Preparação](docs/01_fase0_preparacao.md)
-- [Fase 1: Foundation](docs/02_fase1_foundation.md)
-- [Fase 2: Knowledge](docs/03_fase2_knowledge.md)
-- [Fase 3: AI Core](docs/04_fase3_core_ai.md)
-- [Fase 4: Output](docs/05_fase4_output.md)
+- [Initial Proposal](docs/proposta_inicial.md) (PT-BR)
+- [Technical Proposal](docs/proposta_tecnica.md) (PT-BR)
+- [Detailed Architecture](docs/00_arquitetura.md) (PT-BR)
+- [Phase 0: Preparation](docs/01_fase0_preparacao.md) (PT-BR)
+- [Phase 1: Foundation](docs/02_fase1_fundacao.md) (PT-BR)
+- [Phase 2: Knowledge](docs/03_fase2_integracoes.md) (PT-BR)
+- [Phase 3: AI Core](docs/04_fase3_core_ai.md) (PT-BR)
+- [Phase 4: Output](docs/05_fase4_frontend.md) (PT-BR)
+- [Development Tools Setup](docs/DEVELOPMENT_TOOLS_SETUP.md) (EN)
 
-## 🤝 Contribuindo
+## 🤝 Contributing
 
-Este é um projeto pessoal em desenvolvimento. Contribuições são bem-vindas!
+This is a personal project under development. Contributions are welcome!
 
-1. Fork o projeto
-2. Crie uma branch (`git checkout -b feature/nova-feature`)
-3. Commit suas mudanças (`git commit -m 'Add: nova feature'`)
-4. Push para a branch (`git push origin feature/nova-feature`)
-5. Abra um Pull Request
+1. Fork the project
+2. Create a branch (`git checkout -b feature/new-feature`)
+3. Commit your changes (`git commit -m 'Add: new feature'`)
+4. Push to the branch (`git push origin feature/new-feature`)
+5. Open a Pull Request
 
-## 📄 Licença
+## 📄 License
 
-Este projeto é privado. Todos os direitos reservados.
+This project is private. All rights reserved.
 
-## 👤 Autor
+## 👤 Author
 
-**Victor** - [GitHub](https://github.com/seu-usuario)
+**Victor** - [GitHub](https://github.com/your-username)
 
 ---
 
-**Status do Projeto**: 🚧 Fase 0 Completa → Iniciando Fase 1
+**Project Status**: 🚧 Phase 0 Complete → Starting Phase 1
 
-**Última Atualização**: 19/01/2025
+**Last Updated**: January 19, 2025

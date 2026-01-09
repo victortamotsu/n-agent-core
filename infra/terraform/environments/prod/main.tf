@@ -93,7 +93,6 @@ module "lambda_bff" {
 
   # Note: API Gateway integration will be created after both modules are provisioned
   api_gateway_execution_arn = "" # Will be set after first apply
-  aws_region                = var.aws_region
 
   tags = {
     Module = "lambda-bff"

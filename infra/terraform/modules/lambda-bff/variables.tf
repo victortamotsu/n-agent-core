@@ -27,11 +27,8 @@ variable "api_gateway_execution_arn" {
   default     = ""
 }
 
-variable "aws_region" {
-  description = "AWS Region"
-  type        = string
-  default     = "us-east-1"
-}
+# Note: AWS_REGION is not needed as Lambda environment variable
+# It's automatically injected by the Lambda runtime
 
 variable "tags" {
   description = "Tags to apply to resources"

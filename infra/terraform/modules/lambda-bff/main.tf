@@ -88,7 +88,7 @@ resource "aws_lambda_function" "bff" {
     variables = {
       AGENTCORE_AGENT_ID       = var.agentcore_agent_id
       AGENTCORE_AGENT_ALIAS_ID = var.agentcore_agent_alias_id
-      AWS_REGION               = var.aws_region
+      # AWS_REGION is automatically injected by Lambda runtime - do not set manually
     }
   }
 

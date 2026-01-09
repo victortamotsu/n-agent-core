@@ -20,7 +20,7 @@ output "api_execution_arn" {
 
 output "authorizer_id" {
   description = "ID of the Cognito authorizer"
-  value       = aws_apigatewayv2_authorizer.cognito.id
+  value       = length(aws_apigatewayv2_authorizer.cognito) > 0 ? aws_apigatewayv2_authorizer.cognito[0].id : null
 }
 
 output "stage_name" {

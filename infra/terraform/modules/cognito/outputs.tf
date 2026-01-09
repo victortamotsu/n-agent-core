@@ -34,5 +34,10 @@ output "web_client_secret" {
   sensitive   = true
 }
 
+output "issuer_url" {
+  description = "Issuer URL for JWT authentication (format required by API Gateway authorizer)"
+  value       = "https://cognito-idp.${data.aws_region.current.name}.amazonaws.com/${aws_cognito_user_pool.main.id}"
+}
+
 # Data source for current region
 data "aws_region" "current" {}

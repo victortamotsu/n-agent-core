@@ -73,7 +73,7 @@ module "api_gateway" {
   ]
 
   # Connect to Cognito
-  cognito_user_pool_arn = module.cognito.user_pool_arn
+  cognito_issuer_url    = module.cognito.issuer_url
   cognito_app_client_id = module.cognito.web_client_id
 
   tags = {

@@ -86,7 +86,7 @@ resource "aws_cloudwatch_log_group" "api" {
 
 # Cognito Authorizer (only created when Cognito is configured)
 resource "aws_apigatewayv2_authorizer" "cognito" {
-  count = var.cognito_user_pool_arn != "" && var.cognito_app_client_id != "" ? 1 : 0
+  count = var.cognito_issuer_url != "" && var.cognito_app_client_id != "" ? 1 : 0
 
   api_id           = aws_apigatewayv2_api.main.id
   authorizer_type  = "JWT"
@@ -95,6 +95,6 @@ resource "aws_apigatewayv2_authorizer" "cognito" {
 
   jwt_configuration {
     audience = [var.cognito_app_client_id]
-    issuer   = var.cognito_user_pool_arn
+    issuer   = var.cognito_issuer_url
   }
 }

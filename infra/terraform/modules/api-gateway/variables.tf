@@ -19,8 +19,8 @@ variable "cors_allow_origins" {
   ]
 }
 
-variable "cognito_user_pool_arn" {
-  description = "ARN of Cognito User Pool for JWT authorizer"
+variable "cognito_issuer_url" {
+  description = "Issuer URL of the Cognito User Pool for JWT authentication (format: https://cognito-idp.{region}.amazonaws.com/{user_pool_id})"
   type        = string
   default     = ""
 }

@@ -150,8 +150,12 @@ resource "aws_cognito_user_pool_client" "web" {
   callback_urls = var.callback_urls
   logout_urls   = var.logout_urls
 
-  # Supported identity providers (will be updated when OAuth providers are added)
-  supported_identity_providers = ["COGNITO"]
+  # Supported identity providers (includes OAuth providers)
+  supported_identity_providers = concat(
+    ["COGNITO"],
+    var.google_client_id != "" ? ["Google"] : [],
+    var.microsoft_client_id != "" ? ["Microsoft"] : []
+  )
 
   # Prevent user existence errors
   prevent_user_existence_errors = "ENABLED"

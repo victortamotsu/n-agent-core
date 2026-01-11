@@ -336,14 +336,29 @@ Fast (2-3 days)
 
 # 4. Suggested Technical Roadmap
 
+## Strategy Update (Jan 11, 2026)
+
+**Original Plan**: WhatsApp as primary user interface (Week 4)  
+**Revised Plan**: Web Chat as primary testing interface, WhatsApp deferred to Phase 8
+
+**Rationale**:
+1. **Faster User Testing**: Web interface allows immediate testing without WhatsApp Business approval delays
+2. **Easier Debugging**: Browser DevTools provide better debugging than WhatsApp webhook logs
+3. **Controlled Environment**: Web chat enables better feature iteration and A/B testing
+4. **WhatsApp Preserved**: All WhatsApp development artifacts from Week 1 will be leveraged in Phase 8
+
+This approach maintains the multi-channel vision while prioritizing speed-to-market for user testing.
+
+---
+
 ## Phase 1: Foundation (Weeks 1-4)
 
 | Week | Deliverable | Success Criteria | Status |
 |------|-------------|-----------------|--------|
 | 1 | Monorepo Setup + CI/CD | Automatic Lambda "Hello World" deployment | ✅ **COMPLETE** (Jan 2-4, 2026) |
 | 2 | Base Infrastructure (Terraform/CDK) | DynamoDB + S3 + API Gateway working | ✅ **COMPLETE** (Jan 6-8, 2026) |
-| 3 | Auth (Cognito) + basic BFF | Functional login on frontend | 🔄 In Progress |
-| 4 | WhatsApp Module | Bot responds "Hi" via Webhook | 📋 Planned |
+| 3 | API Gateway Integrations + Auth Flow | Protected routes + OAuth login working | 🔄 **Starting** (Jan 11, 2026) |
+| 4 | Web Chat UI | Basic functional chat interface for testing | 📋 Planned |
 
 ### Week 2 Completion Summary (Jan 6-8, 2026)
 
@@ -382,27 +397,171 @@ Fast (2-3 days)
 - Enable API Gateway → Lambda BFF integrations
 - Configure protected routes with JWT authorizer
 - Test OAuth authentication flow (Google/Microsoft)
-- Create basic frontend authentication UI
+- Create basic React authentication UI
 
-## Phase 2: Core AI (Weeks 5-8)
+### Week 3 Technical Details
+
+**API Gateway Integration**:
+```typescript
+// Create integration to Lambda BFF
+resource "aws_apigatewayv2_integration" "lambda_bff" {
+  api_id             = aws_apigatewayv2_api.main.id
+  integration_type   = "AWS_PROXY"
+  integration_uri    = aws_lambda_function.bff.invoke_arn
+  payload_format_version = "2.0"
+}
+
+// Create protected route
+resource "aws_apigatewayv2_route" "chat" {
+  api_id    = aws_apigatewayv2_api.main.id
+  route_key = "POST /chat"
+  target    = "integrations/${aws_apigatewayv2_integration.lambda_bff.id}"
+  authorization_type = "JWT"
+  authorizer_id = aws_apigatewayv2_authorizer.cognito[0].id
+}
+```
+
+**React Auth Component**:
+```typescript
+// apps/web-client/src/components/Auth/LoginButton.tsx
+import { CognitoAuth } from '@aws-amplify/auth';
+
+const LoginButton = () => {
+  const handleGoogleLogin = () => {
+    Auth.federatedSignIn({ provider: 'Google' });
+  };
+  
+  const handleMicrosoftLogin = () => {
+    Auth.federatedSignIn({ provider: 'Microsoft' });
+  };
+  
+  return (
+    <Box>
+      <Button onClick={handleGoogleLogin}>Login with Google</Button>
+      <Button onClick={handleMicrosoftLogin}>Login with Microsoft</Button>
+    </Box>
+  );
+};
+```
+
+**Next Steps for Week 4:**
+- Build minimal chat interface (React + Material UI)
+- Implement WebSocket/HTTP polling for real-time messages
+- Connect frontend to Lambda BFF → AgentCore Runtime
+- Create chat history component with message persistence
+
+### Week 4 Technical Details
+
+**Chat UI Component Structure**:
+```
+/apps/web-client/src/components/Chat/
+├── ChatContainer.tsx       # Main chat layout
+├── ChatHeader.tsx          # User info + trip selector
+├── MessageList.tsx         # Scrollable message container
+├── MessageBubble.tsx       # Individual message (user/agent)
+├── ChatInput.tsx           # Text input + send button
+├── TypingIndicator.tsx     # "Agent is thinking..."
+└── ChatHistory.tsx         # Previous conversations sidebar
+```
+
+**Material Design 3 Chat Theme**:
+- Primary Color: #6750A4 (Material Purple)
+- Agent Messages: Surface variant with elevation
+- User Messages: Primary container with on-primary text
+- Typography: Roboto Flex (variable font)
+
+**Message Flow**:
+```
+User Input → ChatInput
+    ↓
+POST /api/chat { message, sessionId }
+    ↓
+Lambda BFF → AgentCore Runtime
+    ↓
+Poll GET /api/chat/status/{requestId}
+    ↓
+Display Response in MessageBubble
+    ↓
+Persist to ChatHistory (DynamoDB)
+```
+
+**Success Criteria Week 3-4**:
+- ✅ User can login with Google/Microsoft OAuth
+- ✅ Protected routes return 401 without valid JWT
+- ✅ Chat UI loads and displays correctly on desktop/mobile
+- ✅ Messages sent successfully reach AgentCore Runtime
+- ✅ Agent responses display in chat with proper formatting
+- ✅ Chat history persists and loads on page refresh
+
+## Phase 2: Core AI & Tools (Weeks 5-8)
 
 | Week | Deliverable | Success Criteria |
-|------|-------------|-----------------|
-| 5 | Bedrock Agent configured | Agent answers simple questions |
-| 6 | Tool: Weather Consultation | AI returns weather forecast |
-| 7 | Tool: Google Maps Places | AI searches and returns locations |
-| 8 | Context Persistence | AI remembers trip data |
+|------|-------------|------------------|
+| 5 | Router Agent + Basic Tools | Agent classifies intent and routes correctly |
+| 6 | Profile Agent + Memory | Agent extracts and persists user preferences |
+| 7 | Search Agent + Google Integration | Agent searches real-time info (weather, places) |
+| 8 | Planner Agent + Itinerary Logic | Agent creates basic trip itineraries |
 
-## Phase 3: Product (Weeks 9-12)
+**Testing Method**: All features tested via Web Chat UI (built in Weeks 3-4)
+
+## Phase 3: Product Features (Weeks 9-12)
 
 | Week | Deliverable | Success Criteria |
-|------|-------------|-----------------|
-| 9 | Web Panel (Dashboard) | Trip visualization working |
-| 10 | Document Generation | Itinerary PDF generated |
-| 11 | Booking Integration | Hotel search working |
-| 12 | Notifications + Alerts | Reminders sent via WhatsApp |
+|------|-------------|------------------|
+| 9 | Trip Dashboard | Trip visualization and management panel |
+| 10 | Document Generation | Itinerary PDF/HTML generated and downloadable |
+| 11 | External API Integrations | Google Places + Weather + Maps working |
+| 12 | Booking Search Integration | Hotel/flight search via Booking/Skyscanner |
 
-## Milestone: MVP Ready for Beta Testers (Week 12)
+## Phase 4: Advanced Features (Weeks 13-16)
+
+| Week | Deliverable | Success Criteria |
+|------|-------------|------------------|
+| 13 | Concierge Agent | Flight status monitoring and alerts |
+| 14 | Document Agent | Rich document generation with templates |
+| 15 | Vision Agent | Image processing (OCR, validation) |
+| 16 | Multi-Trip Management | Users can manage multiple trips |
+
+## Phase 5: Optimization & Scale (Weeks 17-20)
+
+| Week | Deliverable | Success Criteria |
+|------|-------------|------------------|
+| 17 | Performance Optimization | Response time < 3s, caching implemented |
+| 18 | Cost Monitoring | CloudWatch dashboards + alerts |
+| 19 | Error Handling & Logging | Comprehensive error tracking |
+| 20 | Load Testing | System handles 100+ concurrent users |
+
+## Phase 6: User Experience (Weeks 21-24)
+
+| Week | Deliverable | Success Criteria |
+|------|-------------|------------------|
+| 21 | Enhanced UI/UX | Material Design 3 fully implemented |
+| 22 | Mobile Responsive | Chat works perfectly on mobile devices |
+| 23 | Accessibility (a11y) | WCAG 2.1 AA compliance |
+| 24 | User Onboarding | Tutorial and help system |
+
+## Phase 7: Analytics & Admin (Weeks 25-28)
+
+| Week | Deliverable | Success Criteria |
+|------|-------------|------------------|
+| 25 | Admin Panel | User management interface |
+| 26 | Analytics Dashboard | Usage metrics and insights |
+| 27 | Agent Configuration UI | Manage prompts without code changes |
+| 28 | Backup & Recovery | Automated backups and restore procedures |
+
+## Phase 8: WhatsApp Integration (Weeks 29-32)
+
+| Week | Deliverable | Success Criteria |
+|------|-------------|------------------|
+| 29 | WhatsApp Business Setup | Account verified and webhook configured |
+| 30 | Message Handler Lambda | Bot receives and responds to WhatsApp messages |
+| 31 | Message Format Adapter | Normalize WhatsApp ↔ Web messages |
+| 32 | Rich Media Support | Send images, PDFs, location via WhatsApp |
+
+**Note**: WhatsApp development artifacts created in Week 1 will be leveraged in this phase.
+
+## Milestone: Web MVP Ready for Beta Testing (Week 12)
+## Milestone: Full Platform Launch with WhatsApp (Week 32)
 
 ---
 

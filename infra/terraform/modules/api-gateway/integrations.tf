@@ -32,24 +32,5 @@ resource "aws_apigatewayv2_route" "chat" {
   target = "integrations/${aws_apigatewayv2_integration.lambda_bff[0].id}"
 }
 
-# GET /health route (public)
-resource "aws_apigatewayv2_integration" "health" {
-  api_id           = aws_apigatewayv2_api.main.id
-  integration_type = "MOCK"
-
-  request_templates = {
-    "application/json" = jsonencode({
-      statusCode = 200
-    })
-  }
-}
-
-resource "aws_apigatewayv2_route" "health" {
-  api_id    = aws_apigatewayv2_api.main.id
-  route_key = "GET /health"
-
-  target = "integrations/${aws_apigatewayv2_integration.health.id}"
-}
-
-# CORS Preflight (OPTIONS) - handled by CORS configuration in main API
-# No need for explicit OPTIONS routes with AWS HTTP API CORS
+# Note: HTTP APIs don't support MOCK integrations
+# Health checks will be handled by Lambda BFF at /health endpoint

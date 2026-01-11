@@ -1,5 +1,6 @@
 # API Gateway Integration Module
 # Connects Lambda BFF to API Gateway routes
+# Updated: Jan 11, 2026 - Enable integrations with JWT protection
 
 # Integration with Lambda BFF
 resource "aws_apigatewayv2_integration" "lambda_bff" {

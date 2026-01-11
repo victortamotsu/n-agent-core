@@ -38,14 +38,8 @@ resource "aws_apigatewayv2_integration" "health" {
   integration_type = "MOCK"
 
   request_templates = {
-    "application/json" = "{\"statusCode\": 200}"
-  }
-
-  response_templates = {
     "application/json" = jsonencode({
-      status  = "healthy"
-      service = "n-agent-api"
-      version = "1.0.0"
+      statusCode = 200
     })
   }
 }

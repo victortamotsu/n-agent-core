@@ -69,12 +69,17 @@ module "api_gateway" {
 
   cors_allow_origins = [
     "http://localhost:5173",
+    "http://localhost:3000",
     "https://app.n-agent.com"
   ]
 
   # Connect to Cognito
   cognito_issuer_url    = module.cognito.issuer_url
   cognito_app_client_id = module.cognito.web_client_id
+
+  # Enable integrations
+  lambda_invoke_arn = module.lambda_bff.function_invoke_arn
+  enable_integrations = true
 
   tags = {
     Module = "api-gateway"
@@ -91,34 +96,13 @@ module "lambda_bff" {
   agentcore_agent_alias_id = var.agentcore_agent_alias_id
   agentcore_agent_arn      = var.agentcore_agent_arn
 
-  # Note: API Gateway integration will be created after both modules are provisioned
-  api_gateway_execution_arn = "" # Will be set after first apply
+  # API Gateway execution ARN for Lambda permission
+  api_gateway_execution_arn = module.api_gateway.api_execution_arn
 
   tags = {
     Module = "lambda-bff"
   }
 }
-
-# API Gateway Integrations (commented out - will be added after first apply)
-# resource "aws_apigatewayv2_integration" "lambda_bff" {
-#   api_id           = module.api_gateway.api_id
-#   integration_type = "AWS_PROXY"
-#   integration_uri  = module.lambda_bff.function_invoke_arn
-#
-#   integration_method     = "POST"
-#   payload_format_version = "2.0"
-#   timeout_milliseconds   = 30000
-# }
-#
-# resource "aws_apigatewayv2_route" "chat" {
-#   api_id    = module.api_gateway.api_id
-#   route_key = "POST /chat"
-#
-#   authorization_type = "JWT"
-#   authorizer_id      = module.api_gateway.authorizer_id
-#
-#   target = "integrations/${aws_apigatewayv2_integration.lambda_bff.id}"
-# }
 
 # Use root module configuration (existing infrastructure)
 module "infrastructure" {

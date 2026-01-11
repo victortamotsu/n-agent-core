@@ -3,7 +3,9 @@
 
 # Integration with Lambda BFF
 resource "aws_apigatewayv2_integration" "lambda_bff" {
-  api_id           = var.api_id
+  count = var.enable_integrations && var.lambda_invoke_arn != "" ? 1 : 0
+
+  api_id           = aws_apigatewayv2_api.main.id
   integration_type = "AWS_PROXY"
   integration_uri  = var.lambda_invoke_arn
 
@@ -18,18 +20,20 @@ resource "aws_apigatewayv2_integration" "lambda_bff" {
 
 # POST /chat route (protected)
 resource "aws_apigatewayv2_route" "chat" {
-  api_id    = var.api_id
+  count = var.enable_integrations && var.lambda_invoke_arn != "" ? 1 : 0
+
+  api_id    = aws_apigatewayv2_api.main.id
   route_key = "POST /chat"
 
-  authorization_type = var.authorizer_id != null ? "JWT" : "NONE"
-  authorizer_id      = var.authorizer_id
+  authorization_type = length(aws_apigatewayv2_authorizer.cognito) > 0 ? "JWT" : "NONE"
+  authorizer_id      = length(aws_apigatewayv2_authorizer.cognito) > 0 ? aws_apigatewayv2_authorizer.cognito[0].id : null
 
-  target = "integrations/${aws_apigatewayv2_integration.lambda_bff.id}"
+  target = "integrations/${aws_apigatewayv2_integration.lambda_bff[0].id}"
 }
 
 # GET /health route (public)
 resource "aws_apigatewayv2_integration" "health" {
-  api_id           = var.api_id
+  api_id           = aws_apigatewayv2_api.main.id
   integration_type = "MOCK"
 
   request_templates = {
@@ -46,25 +50,11 @@ resource "aws_apigatewayv2_integration" "health" {
 }
 
 resource "aws_apigatewayv2_route" "health" {
-  api_id    = var.api_id
+  api_id    = aws_apigatewayv2_api.main.id
   route_key = "GET /health"
 
   target = "integrations/${aws_apigatewayv2_integration.health.id}"
 }
 
-# CORS Preflight (OPTIONS)
-resource "aws_apigatewayv2_integration" "options" {
-  api_id           = var.api_id
-  integration_type = "MOCK"
-
-  request_templates = {
-    "application/json" = "{\"statusCode\": 200}"
-  }
-}
-
-resource "aws_apigatewayv2_route" "options" {
-  api_id    = var.api_id
-  route_key = "OPTIONS /{proxy+}"
-
-  target = "integrations/${aws_apigatewayv2_integration.options.id}"
-}
+# CORS Preflight (OPTIONS) - handled by CORS configuration in main API
+# No need for explicit OPTIONS routes with AWS HTTP API CORS

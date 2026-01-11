@@ -36,3 +36,15 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "lambda_invoke_arn" {
+  description = "Lambda function invoke ARN for integrations"
+  type        = string
+  default     = ""
+}
+
+variable "enable_integrations" {
+  description = "Whether to enable Lambda integrations"
+  type        = bool
+  default     = false
+}

@@ -1,4 +1,22 @@
-# 1. Solution Architecture (AWS Serverless)
+# n-agent Technical Proposal
+
+---
+
+## ⚠️ Scope Documents (Updated January 2026)
+
+This document describes the **complete technical architecture** for n-agent. For implementation priorities:
+
+| Document | Description |
+|----------|-------------|
+| **[MVP_SCOPE.md](./MVP_SCOPE.md)** | MVP scope: Web chat, Airbnb + Gemini integrations |
+| **[V1_SCOPE.md](./V1_SCOPE.md)** | V1 scope: All integrations, Concierge, Memories |
+| **[MVP_ROADMAP.md](./MVP_ROADMAP.md)** | Sprint-by-sprint MVP implementation plan |
+
+**MVP Focus**: Sections marked with 🎯 are MVP-critical. Other sections are V1+.
+
+---
+
+# 1. Solution Architecture (AWS Serverless) 🎯
 
 The architecture will be based on the **Event-Driven** pattern. The chat should not wait for the AI to "think" and consult 5 travel APIs. The chat receives the message, acknowledges receipt, and processing occurs in the background, notifying the user when complete.
 
@@ -39,7 +57,7 @@ The architecture will be based on the **Event-Driven** pattern. The chat should 
 
 ---
 
-# 2. Repository Organization
+# 2. Repository Organization 🎯
 
 For an MVP with an agile team and shared technologies (TypeScript on Front and Back), the best approach is a **Monorepo**.
 

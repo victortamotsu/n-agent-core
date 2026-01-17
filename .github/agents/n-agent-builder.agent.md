@@ -348,6 +348,54 @@ terraform validate
 - `docs/DEPLOY_GUIDE.md` - Complete deploy guide
 - `.promtps_iniciais/proposta_inicial.md` - Product vision
 - `.promtps_iniciais/proposta_técnica.md` - AWS architecture
+- `.promtps_iniciais/MVP_SCOPE.md` - MVP scope definition
+- `.promtps_iniciais/MVP_TRACKER.md` - Current progress tracking
+- `.promtps_iniciais/MVP_ROADMAP.md` - Sprint-by-sprint plan
+
+## 📊 Progress Tracking (MANDATORY)
+
+**CRITICAL**: Keep project tracking updated in BOTH structures.
+
+### 1. MVP Tracker Document
+
+**File**: `.promtps_iniciais/MVP_TRACKER.md`
+
+**Update at END of each session**:
+- Sprint completion percentage
+- Tasks moved to "Completed Items"
+- New tasks added to "In Progress" or "Pending"
+- Blockers added/resolved
+- Session notes with date and summary
+
+**Example Update**:
+```markdown
+### 2026-01-17
+- Completed Search Agent implementation
+- Started Airbnb integration (50%)
+- Blocker: ScraperAPI rate limit hit
+```
+
+### 2. MCP Memory Server
+
+**Structure**: See `.promtps_iniciais/MEMORY_TRACKING_STRUCTURE.md`
+
+**Entities to maintain**:
+- `n-agent-mvp-status` - Overall project status
+- `n-agent-sprint-current` - Current sprint progress
+- `n-agent-completed` - Completed items list
+- `n-agent-pending` - Pending items list
+- `n-agent-blockers` - Active blockers
+- `n-agent-session-notes` - Session history
+
+**Session Start Workflow**:
+1. Read `n-agent-mvp-status` for context
+2. Read `n-agent-sprint-current` for current work
+3. Check `n-agent-blockers` for impediments
+
+**Session End Workflow**:
+1. Update entities with work completed
+2. Add session note with summary
+3. Update `MVP_TRACKER.md` file
 
 ## ⚠️ CoPowerShell when bash is available
 

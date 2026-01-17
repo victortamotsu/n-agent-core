@@ -2,6 +2,22 @@
 
 We are creating a platform for creating and configuring a personal agent that will have the ability to connect to services and help with the personal and work organization of a person in productive age.
 
+---
+
+## ⚠️ Scope Documents (Updated January 2026)
+
+This document describes the **complete vision** for the n-agent platform. For implementation purposes, the project has been divided into:
+
+| Document | Description |
+|----------|-------------|
+| **[MVP_SCOPE.md](./MVP_SCOPE.md)** | Minimum Viable Product: Web chat, user portal, Airbnb + Gemini integrations |
+| **[V1_SCOPE.md](./V1_SCOPE.md)** | Full version: All features including WhatsApp, Concierge, Memories |
+| **[MVP_ROADMAP.md](./MVP_ROADMAP.md)** | Detailed implementation timeline for MVP (6-8 weeks) |
+
+**Current Focus**: MVP delivery first, then iterate towards V1.
+
+---
+
 # General Idea
 
 A platform service that sells packages of a personal assistant for organizing activities in travel schedules.

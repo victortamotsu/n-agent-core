@@ -13,7 +13,7 @@ export const amplifyConfig = {
         oauth: {
           domain: 'n-agent-core-prod.auth.us-east-1.amazoncognito.com',
           scopes: ['email', 'openid', 'profile'],
-          redirectSignIn: ['http://localhost:5173/', 'https://app.n-agent.com/'],
+          redirectSignIn: ['http://localhost:5173/auth/callback', 'https://app.n-agent.com/auth/callback'],
           redirectSignOut: ['http://localhost:5173/', 'https://app.n-agent.com/'],
           responseType: 'code',
           providers: ['Google', 'Microsoft']

@@ -5,13 +5,39 @@
  */
 
 import { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { ThemeProvider, createTheme, CssBaseline, CircularProgress, Box } from '@mui/material';
 import { Amplify } from 'aws-amplify';
+import { Hub } from 'aws-amplify/utils';
 import { amplifyConfig } from './config/amplify';
 import Login from './components/Auth/Login';
 import ProtectedRoute from './components/Auth/ProtectedRoute';
 import Chat from './pages/Chat';
+
+// OAuth Callback Handler
+function AuthCallback() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    // Listen for auth events
+    const unsubscribe = Hub.listen('auth', ({ payload }) => {
+      if (payload.event === 'signInWithRedirect') {
+        navigate('/chat', { replace: true });
+      } else if (payload.event === 'signInWithRedirect_failure') {
+        console.error('OAuth error:', payload.data);
+        navigate('/login', { replace: true });
+      }
+    });
+
+    return () => unsubscribe();
+  }, [navigate]);
+
+  return (
+    <Box display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
+      <CircularProgress />
+    </Box>
+  );
+}
 
 // Configure Amplify
 Amplify.configure(amplifyConfig);
@@ -42,6 +68,7 @@ function App() {
       <BrowserRouter>
         <Routes>
           <Route path="/login" element={<Login />} />
+          <Route path="/auth/callback" element={<AuthCallback />} />
           <Route
             path="/chat"
             element={

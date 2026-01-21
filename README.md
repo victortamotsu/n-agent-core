@@ -4,7 +4,8 @@
 
 Intelligent conversational assistant for travel planning and management using **Amazon Bedrock AgentCore** + **Strands Agents SDK** with multi-agent architecture and cost optimization.
 
-## 🎯 Overview
+
+## 🎯 Overview do Igor
 
 **N-Agent** is a travel assistant that:
 - 💬 Converses naturally via **Web Chat** (main interface)

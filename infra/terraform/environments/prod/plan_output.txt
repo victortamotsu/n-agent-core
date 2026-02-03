@@ -1,5 +1,0 @@
-Acquiring state lock. This may take a few moments...
-[0m[1mvar.facebook_app_id[0m
-  Facebook app ID
-
-  [1mEnter a value:[0m [0m
